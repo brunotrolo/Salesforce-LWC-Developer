@@ -189,6 +189,37 @@ jornada/produto** (`## Padrão: <Nome da Jornada>`). Cada seção documenta:
 - Jornadas diferentes podem ter convenções diferentes entre si — isso é esperado e
   documentado, não "corrigido" automaticamente
 
+### Regras de Confiança e Curadoria (decididas com o usuário em sessão de validação)
+
+Antes de partir para o `SKILL.md` de verdade, 4 pontos em aberto foram validados
+diretamente com o usuário — resolvem ambiguidades que mudariam o comportamento do
+guia inicial:
+
+1. **Seleção de arquivos — modo híbrido.** O usuário pode informar os caminhos
+   diretamente (já sabe onde estão) OU pedir que a skill liste os LWCs existentes no
+   projeto para escolher de um menu. O guia inicial (seção 7) sempre pergunta qual
+   dos dois o usuário prefere — nunca assume.
+2. **Mínimo de 3 componentes por jornada.** Se o usuário apontar menos de 3
+   componentes para uma jornada (nova ou em atualização), a skill **bloqueia a
+   extração** e pede mais exemplos antes de escrever qualquer seção no documento.
+   Menos que isso não gera confiança suficiente para virar "padrão documentado".
+3. **Divergência entre componentes da mesma jornada → documentada, nunca decidida
+   pela skill.** Se os arquivos apontados para uma jornada usarem convenções
+   diferentes entre si (ex.: 2 componentes com prefixo `c_` e 3 com `x_`), a skill
+   **não escolhe a maioria automaticamente** — ela registra as variantes encontradas
+   na seção do documento e sinaliza explicitamente como "convenção inconsistente
+   nesta jornada", deixando a decisão para o usuário resolver quando quiser.
+4. **Lista canônica de jornadas/produtos.** A skill mantém um índice de jornadas já
+   documentadas (`journeys-index.json` ou uma lista no topo do
+   `design-patterns.md` — ver seção 6) e, ao receber um nome novo, verifica
+   similaridade com os já existentes (ex.: "Atendimento" vs. "Atendimento ao
+   Cliente") — avisando o usuário antes de criar uma seção potencialmente duplicada
+   por variação de digitação.
+
+Essas 4 regras são o que torna o guia inicial (seção 7) obrigatório: a skill nunca
+pode simplesmente "receber input e sair processando" — cada uma delas exige uma
+checagem ou pergunta antes da extração acontecer.
+
 **Aplicação (Skill 2, quando existir):** ao gerar um componente, o usuário informa
 qual jornada/produto usar como referência ("seguir o padrão de Atendimento ao
 Cliente"); a skill consulta **apenas aquela seção** do documento — nunca mistura
@@ -266,7 +297,8 @@ Salesforce-LWC-Developer/
 │       │   ├── scripts/
 │       │   │   └── pattern-extractor.mjs       # Le arquivos apontados, extrai padroes
 │       │   └── references/
-│       │       └── extraction-signals.md       # O que extrair (naming, css, slots, eventos...)
+│       │       ├── extraction-signals.md       # O que extrair (naming, css, slots, eventos...)
+│       │       └── guided-mode.md              # Fluxo do guia inicial (secao 7) — passo a passo
 │       │
 │       └── lwc-pattern-generator/              # SKILL 2 — depois de validar a Skill 1
 │           ├── SKILL.md                        # Triggers, owns/delegates, workflow completo
@@ -286,29 +318,67 @@ Salesforce-LWC-Developer/
 │           │   └── conflict-resolution.md
 │           └── tests/                          # guard.test.mjs, pattern-scorer.test.mjs
 ├── docs/
-│   └── design-patterns.md                      # Documento vivo — 1 secao por jornada/produto
+│   ├── design-patterns.md                      # Documento vivo — 1 secao por jornada/produto
+│   └── journeys-index.json                     # Lista canonica de jornadas/produtos ja documentadas
 ├── .apex-lwc-developer/state/<Componente>.md   # checkpoint por componente (caminho neutro)
 ├── force-app/main/default/lwc/                 # LWCs gerados (Skill 2)
 └── LICENSE                                     # MIT
 ```
 
-## 7. Fluxo Interativo (Modo Guiado) — Resumo
+## 7. Fluxo Interativo — Skill 1 (`lwc-pattern-documenter`), Guia Inicial Obrigatório
+
+> **Princípio não-negociável (reforçado pelo usuário):** esta skill nunca "recebe
+> input e sai processando". Toda execução abre com um guia — mesmo sendo uma skill
+> só de leitura/documentação, ela decide coisas importantes (bloquear por poucos
+> componentes, sinalizar divergência, evitar jornada duplicada) que exigem checkpoint
+> humano antes de escrever qualquer coisa.
+
+1. **Abre mostrando o estado atual:** lista as jornadas/produtos já documentadas em
+   `design-patterns.md` (via `journeys-index.json`), se houver alguma.
+2. **Pergunta: jornada nova ou atualizar uma existente?** Se o nome informado for
+   parecido com uma jornada já indexada, avisa e confirma antes de prosseguir (regra
+   4 da seção 4).
+3. **Pergunta: você já tem os caminhos dos arquivos, ou quer que eu liste os LWCs do
+   projeto para escolher?** — modo híbrido (regra 1 da seção 4).
+4. **Confirma a lista final de arquivos antes de extrair** — checkpoint explícito,
+   nunca assume que a primeira lista informada é a definitiva.
+5. **Verifica o mínimo de 3 componentes** (regra 2 da seção 4). Se não bater, **para
+   aqui** e pede mais exemplos — não escreve nada no documento.
+6. **Extrai os padrões** dos arquivos confirmados (naming, CSS/tokens, slots,
+   eventos, composição, a11y, performance — ver `extraction-signals.md`).
+7. **Se encontrar divergência** entre os componentes da mesma jornada, documenta as
+   variantes e sinaliza — nunca decide sozinha qual é a "oficial" (regra 3 da
+   seção 4).
+8. **Mostra um preview do que vai escrever** na seção do Markdown ANTES de salvar —
+   aprovação explícita do usuário.
+9. **Escreve/atualiza a seção** em `design-patterns.md` e atualiza o
+   `journeys-index.json` (nome novo → adiciona ao índice; atualização → só bate a
+   data do último scan).
+
+Detalhamento completo desse fluxo (mensagens exatas, formato das perguntas) fica em
+`references/guided-mode.md` da própria skill, a escrever no Tier 0.
+
+## 8. Fluxo Interativo — Skill 2 (`lwc-pattern-generator`), Resumo
 
 1. **Escolha de modo:** Automático / Guiado (passo-a-passo) / Learn Patterns
 2. **Requirement gathering:** propósito, fonte de dados, slots, nível de acessibilidade
-3. **Preview de padrão:** mostra nome/estrutura proposta ANTES de gerar (ex.: "seu
+3. **Escolha da jornada/produto de referência** (consultando o `journeys-index.json`
+   da Skill 1) — a geração só usa a seção correspondente do `design-patterns.md`.
+4. **Preview de padrão:** mostra nome/estrutura proposta ANTES de gerar (ex.: "seu
    padrão usa prefixo `c_`, seu componente ficaria `c_userPicker`")
-4. **Gate de geração:** checklist + score antes de liberar preview
-5. **Live Preview:** deploy em scratch org (`--test-only`), abre no browser, aprovação
-6. **Deploy final:** só após aprovação explícita; delega a `platform-metadata-deploy`
-7. **Aprendizado:** atualiza `patterns.json` + `RECOMMENDATIONS.md` se houve fricção
+5. **Gate de geração:** checklist + score antes de liberar preview
+6. **Live Preview:** deploy em scratch org (`--test-only`), abre no browser, aprovação
+7. **Deploy final:** só após aprovação explícita; delega a `platform-metadata-deploy`
+8. **Aprendizado:** atualiza a seção da jornada em `design-patterns.md` +
+   `RECOMMENDATIONS.md` se houve fricção
 
-## 8. Arquivos Críticos — Ordem de Implementação
+## 9. Arquivos Críticos — Ordem de Implementação
 
 - **Tier 0 (MVP — Skill 1, `lwc-pattern-documenter`):** `SKILL.md` +
-  `pattern-extractor.mjs` + `extraction-signals.md` + `docs/design-patterns.md`
-  (arquivo inicial vazio/template). Sem segurança de escrita de componente (não
-  aplicável — a skill só lê arquivos e escreve Markdown).
+  `pattern-extractor.mjs` + `extraction-signals.md` + `guided-mode.md` +
+  `docs/design-patterns.md` + `docs/journeys-index.json` (arquivos iniciais
+  vazios/template). Sem segurança de escrita de componente (não aplicável — a skill
+  só lê arquivos e escreve Markdown/JSON de índice).
 - **Tier 1 (validação do MVP):** usar a Skill 1 em 2-3 jornadas reais da org do
   usuário, revisar manualmente se os padrões extraídos batem com a realidade, ajustar
   `extraction-signals.md` conforme necessário. **Só avança pro Tier 2 depois desse
@@ -316,10 +386,11 @@ Salesforce-LWC-Developer/
 - **Tier 2 (fundação da Skill 2, `lwc-pattern-generator`):** `SKILL.md`, `guard.mjs`
 - **Tier 3 (geração):** `pattern-scorer.mjs`, `lwc-generator.mjs`, templates
   `.mustache`
-- **Tier 4 (UX):** `guided-mode.md`, `quality-rubric.md`, `conflict-resolution.md`
+- **Tier 4 (UX):** `guided-mode.md` (da Skill 2), `quality-rubric.md`,
+  `conflict-resolution.md`
 - **Tier 5 (aprendizado):** `RECOMMENDATIONS.md`, wiring em `settings.json`
 
-## 9. Reuso de `apex-test-loop` e `sf-skills`
+## 10. Reuso de `apex-test-loop` e `sf-skills`
 
 | Componente | Origem | Adaptação |
 |---|---|---|
@@ -335,7 +406,7 @@ Salesforce-LWC-Developer/
 `sf-skills` é licenciado Apache-2.0 — qualquer trecho de texto/código reaproveitado
 literalmente deve manter atribuição (NOTICE) no momento da implementação.
 
-## 10. Decisões de Design (e porquês)
+## 11. Decisões de Design (e porquês)
 
 - **Gate em 80pt, não 99%:** LWC é UI — "mínimo viável deployável" é funcionar + casar
   com o padrão; validação de acessibilidade fina acontece no preview visual, não é
@@ -348,26 +419,50 @@ literalmente deve manter atribuição (NOTICE) no momento da implementação.
   Salesforce para UI (Live Preview / Local Dev).
 - **Conflito de padrão é sempre decisão do usuário** — a skill nunca decide sozinha
   qual convenção "vale mais".
+- **Seleção de arquivos híbrida (caminho manual OU menu interativo):** cobre tanto o
+  usuário que já sabe exatamente o que quer apontar quanto o que prefere que a skill
+  ajude a descobrir os LWCs do projeto.
+- **Mínimo de 3 componentes por jornada:** abaixo disso a extração vira "achismo" —
+  um único componente não prova convenção, prova coincidência. Bloquear e pedir mais
+  exemplos é mais barato que documentar um padrão falso que a Skill 2 usaria depois.
+- **Divergência é documentada, nunca resolvida por maioria automática:** decidir por
+  frequência esconderia uma inconsistência real da org por trás de uma escolha
+  arbitrária do agente. Melhor deixar visível e permitir que o usuário decida com
+  contexto que a skill não tem.
+- **Lista canônica de jornadas/produtos:** sem ela, pequenas variações de digitação
+  (“Atendimento” vs. “Atendimento ao Cliente”) fragmentariam o documento em seções
+  redundantes — o índice existe só para evitar esse acidente, não para restringir
+  nomes livres.
+- **Guia inicial obrigatório mesmo numa skill "só leitura":** as 4 regras acima geram
+  decisões (bloquear, sinalizar, confirmar, avisar duplicidade) que não podem
+  acontecer silenciosamente — por isso a Skill 1 também tem um fluxo guiado (seção 7),
+  não é "aponta arquivo e sai processando".
 
 ## Próximos Passos
 
-Este documento é o ponto de partida para discussão. Antes de qualquer código de skill
-ser escrito, validar item a item:
+Este documento é o ponto de partida para discussão. Estado da validação item a item:
 
 1. ✅ **Decidido:** escopo dividido em 2 skills sequenciais (seção 0) — Skill 1
    (`lwc-pattern-documenter`) documenta padrões por jornada/produto em Markdown;
    Skill 2 (`lwc-pattern-generator`) gera código depois, usando a Skill 1 como
    referência. Implementação começa pela Skill 1 (Tier 0).
-2. Confirmar o algoritmo de extração de padrões da Skill 1 (seção 4) — quais sinais
-   extrair primeiro (naming, CSS/tokens, slots, eventos, a11y, performance) e em que
-   ordem de prioridade para a primeira jornada real que o usuário for documentar?
-3. Confirmar formato exato do `docs/design-patterns.md` (seção 4, "Exemplo de
-   estrutura") — esse template serve, ou precisa de mais/menos campos por seção?
-4. Confirmar o modelo de Ownership & Delegation entre as duas skills (seção 2) — faz
-   sentido para o workflow real da sua org?
-5. (Só relevante quando a Skill 2 entrar em cena) Confirmar as 3 camadas de segurança
+2. ✅ **Decidido:** regras de confiança e curadoria da Skill 1 (seção 4.1) —
+   seleção híbrida de arquivos, mínimo de 3 componentes por jornada, divergência
+   documentada (nunca decidida pela skill), lista canônica de jornadas/produtos.
+3. ✅ **Decidido:** a Skill 1 tem um guia inicial obrigatório (seção 7) — nunca
+   executa direto a partir do input bruto; sempre passa pelos 9 passos de checkpoint
+   antes de escrever no documento.
+4. Confirmar formato exato do `docs/design-patterns.md` (seção 4, "Exemplo de
+   estrutura") e do `journeys-index.json` (seção 6) — os templates propostos servem,
+   ou precisam de mais/menos campos?
+5. Confirmar quais sinais de extração entram no `extraction-signals.md` e em que
+   ordem de prioridade, usando a primeira jornada real que o usuário for documentar
+   como teste de validação (Tier 1).
+6. (Só relevante quando a Skill 2 entrar em cena) Confirmar as 3 camadas de segurança
    (seção 3) e a rubrica de 100 pontos (seção 5) — nenhuma mudança aqui ainda, ficam
    validadas quando chegar a hora do Tier 2+.
 
-Próximo passo prático: implementar o Tier 0 (Skill 1) e validar com uma jornada real
-da org do usuário antes de qualquer outra decisão.
+Próximo passo prático: implementar o Tier 0 (Skill 1) — `SKILL.md`,
+`pattern-extractor.mjs`, `extraction-signals.md`, `guided-mode.md`,
+`design-patterns.md` e `journeys-index.json` — e validar com uma jornada real da org
+do usuário.

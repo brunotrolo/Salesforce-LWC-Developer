@@ -280,23 +280,63 @@ Isso muda 3 coisas na arquitetura original:
 - Seção 6 (Estrutura de Repositório) e seção 8 (Ordem de Implementação) atualizadas
   para refletir 2 pastas de skill e um Tier 0 dedicado ao MVP da Skill 1.
 
-## Próximos Passos (atualizado após o pivô das 2 skills)
+## Fase 4 — Dúvidas Levantadas Antes do Desenvolvimento (resolvidas)
+
+Antes de começar o `SKILL.md` de verdade, o usuário pediu explicitamente: *"antes de
+seguirmos para o desenvolvimento da primeira skill, vc tem alguma duvida quanto ao
+objetivo e minha visao sobre este skill?"* — e lembrou de um ponto crítico: *"este
+skill vai precisar de um guia inicial sempre que iniciar pois nao é simplesmente
+pedir e sair criando um LWC"*.
+
+Isso valia mesmo para a Skill 1, que não gera LWC nenhum — ela também toma decisões
+(bloquear, sinalizar, confirmar) que não podem acontecer silenciosamente. Levantei 4
+dúvidas reais sobre a arquitetura original que mudariam o desenho do guia inicial, e
+o usuário decidiu cada uma:
+
+| # | Dúvida | Decisão do usuário |
+|---|---|---|
+| 1 | Como apontar os arquivos de uma jornada? | **Híbrido** — caminho manual OU menu interativo (a skill lista os LWCs do projeto se o usuário preferir) |
+| 2 | Mínimo de componentes para confiar num padrão? | **Mínimo 3** — abaixo disso, bloqueia e pede mais exemplos |
+| 3 | E se os componentes da mesma jornada divergirem entre si? | **Documenta a divergência** — a skill nunca decide sozinha por maioria; registra as variantes e sinaliza |
+| 4 | Nome de jornada/produto livre ou controlado? | **Lista controlada** — mantém um índice (`journeys-index.json`) e avisa se o nome novo parece duplicado |
+
+### Como isso virou o fluxo guiado (seção 7 do ARCHITECTURE.md)
+
+As 4 decisões acima implicam 9 passos obrigatórios sempre que a Skill 1 roda: (1)
+mostra jornadas já documentadas, (2) pergunta se é jornada nova ou atualização —
+checando duplicidade pela regra 4, (3) pergunta o modo de seleção de arquivos pela
+regra 1, (4) confirma a lista final antes de extrair, (5) verifica o mínimo de 3 pela
+regra 2 — bloqueia se não bater, (6) extrai os padrões, (7) documenta divergência se
+houver pela regra 3, (8) mostra preview do que vai escrever antes de salvar, (9)
+escreve/atualiza o documento e o índice.
+
+### O que mudou no `docs/ARCHITECTURE.md`
+
+- Seção 4 ganhou a subseção "Regras de Confiança e Curadoria" com as 4 decisões.
+- Nova seção 7: "Fluxo Interativo — Skill 1, Guia Inicial Obrigatório" (os 9 passos).
+- Antiga seção 7 (fluxo da Skill 2) virou seção 8, e as seguintes foram renumeradas
+  (9 = Ordem de Implementação, 10 = Reuso, 11 = Decisões de Design).
+- Seção 6 (Estrutura de Repositório) ganhou `journeys-index.json` e
+  `references/guided-mode.md` na pasta da Skill 1.
+- Seção 11 (Decisões de Design) ganhou o porquê de cada uma das 4 regras.
+
+## Próximos Passos (atualizado após a rodada de dúvidas)
 
 Este planejamento e o `docs/ARCHITECTURE.md` formam a base de discussão antes de
-qualquer código da skill ser escrito. Os pontos em aberto para validação (replicados
-da seção "Próximos Passos" do ARCHITECTURE.md):
+qualquer código da skill ser escrito. Estado da validação item a item:
 
 1. ✅ **Decidido:** 2 skills sequenciais, começando pela `lwc-pattern-documenter`
    (Tier 0 do MVP).
-2. Confirmar o algoritmo de extração de padrões da Skill 1 — quais sinais extrair
-   primeiro (naming, CSS/tokens, slots, eventos, a11y, performance) e em que ordem de
-   prioridade?
-3. Confirmar formato exato do `docs/design-patterns.md` — o template de seção por
-   jornada/produto proposto serve, ou precisa de ajustes?
-4. Confirmar o modelo de Ownership & Delegation entre as duas skills — faz sentido
-   para o workflow real da org do usuário?
+2. ✅ **Decidido:** as 4 regras de confiança e curadoria (seleção híbrida, mínimo 3
+   componentes, divergência documentada, lista canônica de jornadas) e o guia
+   inicial obrigatório de 9 passos que elas implicam.
+3. Confirmar formato exato do `docs/design-patterns.md` e do `journeys-index.json` —
+   os templates propostos servem, ou precisam de ajustes?
+4. Confirmar quais sinais entram no `extraction-signals.md` e em que ordem de
+   prioridade, usando a primeira jornada real do usuário como teste (Tier 1).
 5. (Só relevante mais adiante, quando a Skill 2 entrar em cena) 3 camadas de
    segurança e rubrica de 100 pontos — sem mudanças por enquanto.
 
-**Próximo passo prático:** implementar o Tier 0 (Skill 1, `lwc-pattern-documenter`) e
-validar com uma jornada real da org do usuário.
+**Próximo passo prático:** implementar o Tier 0 (Skill 1, `lwc-pattern-documenter`) —
+`SKILL.md`, `pattern-extractor.mjs`, `extraction-signals.md`, `guided-mode.md`,
+`design-patterns.md` e `journeys-index.json`.
