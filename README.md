@@ -36,6 +36,10 @@ agora ao domínio de LWC.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — arquitetura proposta: fluxo,
   modelo de ownership/delegação, segurança em 3 camadas, sistema de aprendizado de
   padrões, rubrica de qualidade, estrutura de repositório e decisões de design.
+- [`docs/PLANEJAMENTO.md`](docs/PLANEJAMENTO.md) — trilha de pesquisa que embasou a
+  arquitetura: comparação com `apex-test-loop` e com o repositório oficial
+  `forcedotcom/sf-skills`, matriz de decisão (reusar/adaptar/manter) e o "porquê"
+  por trás de cada escolha.
 
 ## Licença
 
