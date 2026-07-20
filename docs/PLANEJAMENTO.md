@@ -320,7 +320,61 @@ escreve/atualiza o documento e o índice.
   `references/guided-mode.md` na pasta da Skill 1.
 - Seção 11 (Decisões de Design) ganhou o porquê de cada uma das 4 regras.
 
-## Próximos Passos (atualizado após a rodada de dúvidas)
+## Fase 5 — Pesquisa: Skills Oficiais de LWC/Design System no sf-skills
+
+O usuário questionou diretamente (em maiúsculas, sinal de que era um ponto que
+deveria ter sido checado antes): *"VC ESTA CONSIDERANDO A IMPORTACAO DA SKILL PADRAO
+DO SALESFORCE?"* — referência direta ao que o `apex-test-loop` já fez (importou 7
+skills oficiais de Apex do `sf-skills` em vez de reinventar o craft, com
+`VENDOR-ATTRIBUTION.md`). Era uma lacuna real: a arquitetura da LWC Developer tinha
+sido desenhada sem verificar se o próprio `sf-skills` já cobria parte do escopo.
+
+### Método
+
+Pesquisa factual (não de memória) via GitHub API + `raw.githubusercontent.com`
+direto no repositório `forcedotcom/sf-skills`: listagem completa das 94 skills,
+leitura do `SKILL.md` real de cada skill nas categorias LWC/Design Systems/Experience
+Cloud, e confirmação de licença (`LICENSE.txt`) e versão (`1.31.0`, 17/07/2026).
+
+### Achados
+
+- **Licença confirmada:** Apache-2.0 (`LICENSE.txt`, Copyright Salesforce Inc. 2026).
+- **13 skills `experience-*`** existem, mas a maioria cobre **React UI Bundles** (um
+  framework diferente, mais recente, para Experience Cloud) — irrelevante para LWC
+  clássico.
+- **`experience-lwc-generate`**: craft de autoria de LWC (bundle, `@wire`,
+  Apex/GraphQL, SLDS2, a11y, Jest, metodologia "PICKLES"). Não faz pattern-learning.
+- **`design-systems-slds-apply`**: craft de styling/tokens SLDS (Lightning Base
+  Components > Blueprints > Styling Hooks > CSS custom). Não faz pattern-learning.
+- **`design-systems-slds-validate`**: audita LWCs existentes contra compliance SLDS
+  **genérico** (linter + scorecard A-F) — mais próximo de "scan de componentes
+  existentes", mas contra regras oficiais do SLDS, não contra convenções específicas
+  da org do usuário nem por jornada/produto.
+- **Confirmação central:** nenhuma das 94 skills aprende o design system específico
+  de uma org a partir de componentes existentes, agrupado por jornada/produto — a
+  `lwc-pattern-documenter` **não tem equivalente oficial**, é funcionalidade
+  genuinamente nova.
+
+### Decisão do usuário
+
+Apresentadas 3 opções (as 2 essenciais / as 3 completas com auditoria / decidir
+depois), o usuário escolheu **as 2 essenciais**: importar `experience-lwc-generate` +
+`design-systems-slds-apply` na íntegra para a Skill 2 (`lwc-pattern-generator`), sem
+`design-systems-slds-validate` por ora.
+
+### O que mudou no `docs/ARCHITECTURE.md`
+
+- Seção 2 (Ownership & Delegation): nova tabela de delegação de craft, só para a
+  Skill 2 — `lwc-pattern-documenter` não delega craft (não gera nada).
+- Seção 6 (Estrutura de Repositório): `.claude/skills/` ganhou
+  `experience-lwc-generate/`, `design-systems-slds-apply/` e `VENDOR-ATTRIBUTION.md`.
+- Seção 9 (Tier 2): agora inclui a importação das 2 skills como parte da fundação da
+  Skill 2.
+- Seção 10 (Reuso): tabela ganhou as 2 skills com a nota de confirmação da pesquisa.
+- Seção 11 (Decisões de Design): novo item explicando por que delegar em vez de
+  reinventar.
+
+## Próximos Passos (atualizado após a pesquisa de skills oficiais)
 
 Este planejamento e o `docs/ARCHITECTURE.md` formam a base de discussão antes de
 qualquer código da skill ser escrito. Estado da validação item a item:
@@ -330,11 +384,14 @@ qualquer código da skill ser escrito. Estado da validação item a item:
 2. ✅ **Decidido:** as 4 regras de confiança e curadoria (seleção híbrida, mínimo 3
    componentes, divergência documentada, lista canônica de jornadas) e o guia
    inicial obrigatório de 9 passos que elas implicam.
-3. Confirmar formato exato do `docs/design-patterns.md` e do `journeys-index.json` —
+3. ✅ **Decidido:** a Skill 2 importa `experience-lwc-generate` +
+   `design-systems-slds-apply` do `sf-skills` para o craft de LWC — confirmado que
+   nenhuma skill oficial cobre o pattern-learning da `lwc-pattern-documenter`.
+4. Confirmar formato exato do `docs/design-patterns.md` e do `journeys-index.json` —
    os templates propostos servem, ou precisam de ajustes?
-4. Confirmar quais sinais entram no `extraction-signals.md` e em que ordem de
+5. Confirmar quais sinais entram no `extraction-signals.md` e em que ordem de
    prioridade, usando a primeira jornada real do usuário como teste (Tier 1).
-5. (Só relevante mais adiante, quando a Skill 2 entrar em cena) 3 camadas de
+6. (Só relevante mais adiante, quando a Skill 2 entrar em cena) 3 camadas de
    segurança e rubrica de 100 pontos — sem mudanças por enquanto.
 
 **Próximo passo prático:** implementar o Tier 0 (Skill 1, `lwc-pattern-documenter`) —

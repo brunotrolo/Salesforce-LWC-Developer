@@ -117,12 +117,27 @@ skill em paralelo. Com a divisão em 2 skills (seção 0), o ownership também s
 - Nunca gera, edita ou deploya componentes — só lê e documenta
 
 **`lwc-pattern-generator` OWNS (autoridade exclusiva, quando implementada):**
-- LWC Generation & Editing (novo componente ou edição aprovada), respeitando a
-  jornada/produto de referência escolhida pelo usuário
+- Injeção dos padrões específicos da org (aprendidos pela Skill 1) na geração —
+  isso NÃO é delegável, é o próprio motivo da skill existir
 - Onboarding Interativo (modo guiado, perguntas, preview gate)
 - Conflict Resolution (padrão vs. requisito → sempre pergunta ao usuário)
 
-**Ambas delegam para:**
+**`lwc-pattern-generator` delega o CRAFT de LWC para skills oficiais do `sf-skills`**
+(confirmado por pesquisa factual no repositório — ver `docs/PLANEJAMENTO.md`, seção
+"Pesquisa — Skills Oficiais de LWC/Design System no sf-skills"; nenhuma skill oficial
+faz o que a `lwc-pattern-documenter` faz, então só a Skill 2 delega craft):
+
+| Craft | Delega para | Razão |
+|---|---|---|
+| Autoria de LWC (bundle, `@wire`, Apex/GraphQL, a11y, Jest) | `experience-lwc-generate` | Mesmo princípio do `apex-test-loop`: não reinventar o "como escrever bem" — vem da skill oficial |
+| Styling/tokens SLDS (Lightning Base Components > Blueprints > Styling Hooks > CSS) | `design-systems-slds-apply` | Craft de compliance visual vem da skill oficial, não de heurística nossa |
+
+Ambas importadas **na íntegra** para `.claude/skills/` (Apache-2.0, com
+`VENDOR-ATTRIBUTION.md` — ver seção 6), no Tier 2 (fundação da Skill 2). A
+`lwc-pattern-documenter` (Skill 1) **não delega craft** — ela só lê e documenta, não
+gera nada.
+
+**Ambas as skills (1 e 2) também delegam para:**
 
 | Tarefa | Delega para | Razão |
 |---|---|---|
@@ -300,23 +315,27 @@ Salesforce-LWC-Developer/
 │       │       ├── extraction-signals.md       # O que extrair (naming, css, slots, eventos...)
 │       │       └── guided-mode.md              # Fluxo do guia inicial (secao 7) — passo a passo
 │       │
-│       └── lwc-pattern-generator/              # SKILL 2 — depois de validar a Skill 1
-│           ├── SKILL.md                        # Triggers, owns/delegates, workflow completo
-│           ├── RECOMMENDATIONS.md              # Ledger de autoaprendizado (R-XXXX)
-│           ├── scripts/
-│           │   ├── guard.mjs                   # Camada 2 de seguranca
-│           │   ├── pattern-scorer.mjs          # Rubrica 100pt
-│           │   └── lwc-generator.mjs           # Motor de templates (geracao)
-│           ├── assets/
-│           │   ├── templates/                  # .mustache: component.js/html/css/meta.xml
-│           │   └── examples/                   # LWCs de referencia
-│           ├── references/
-│           │   ├── quality-rubric.md
-│           │   ├── guided-mode.md
-│           │   ├── preview-integration.md
-│           │   ├── security-gates.md
-│           │   └── conflict-resolution.md
-│           └── tests/                          # guard.test.mjs, pattern-scorer.test.mjs
+│       ├── lwc-pattern-generator/              # SKILL 2 — depois de validar a Skill 1
+│       │   ├── SKILL.md                        # Triggers, owns/delegates, workflow completo
+│       │   ├── RECOMMENDATIONS.md              # Ledger de autoaprendizado (R-XXXX)
+│       │   ├── scripts/
+│       │   │   ├── guard.mjs                   # Camada 2 de seguranca
+│       │   │   ├── pattern-scorer.mjs          # Rubrica 100pt
+│       │   │   └── lwc-generator.mjs           # Motor de templates (geracao)
+│       │   ├── assets/
+│       │   │   ├── templates/                  # .mustache: component.js/html/css/meta.xml
+│       │   │   └── examples/                   # LWCs de referencia
+│       │   ├── references/
+│       │   │   ├── quality-rubric.md
+│       │   │   ├── guided-mode.md
+│       │   │   ├── preview-integration.md
+│       │   │   ├── security-gates.md
+│       │   │   └── conflict-resolution.md
+│       │   └── tests/                          # guard.test.mjs, pattern-scorer.test.mjs
+│       │
+│       ├── experience-lwc-generate/            # IMPORTADA na integra (sf-skills, Apache-2.0) — Tier 2
+│       ├── design-systems-slds-apply/          # IMPORTADA na integra (sf-skills, Apache-2.0) — Tier 2
+│       └── VENDOR-ATTRIBUTION.md               # Atribuicao Apache-2.0 das 2 skills acima (padrao apex-test-loop)
 ├── docs/
 │   ├── design-patterns.md                      # Documento vivo — 1 secao por jornada/produto
 │   └── journeys-index.json                     # Lista canonica de jornadas/produtos ja documentadas
@@ -383,7 +402,10 @@ Detalhamento completo desse fluxo (mensagens exatas, formato das perguntas) fica
   usuário, revisar manualmente se os padrões extraídos batem com a realidade, ajustar
   `extraction-signals.md` conforme necessário. **Só avança pro Tier 2 depois desse
   ciclo de validação.**
-- **Tier 2 (fundação da Skill 2, `lwc-pattern-generator`):** `SKILL.md`, `guard.mjs`
+- **Tier 2 (fundação da Skill 2, `lwc-pattern-generator`):** `SKILL.md`, `guard.mjs`,
+  **+ importar na íntegra `experience-lwc-generate` e `design-systems-slds-apply`**
+  do `sf-skills` (snapshot v1.31.0, Apache-2.0) para `.claude/skills/`, com
+  `VENDOR-ATTRIBUTION.md` (mesmo padrão do `apex-test-loop`)
 - **Tier 3 (geração):** `pattern-scorer.mjs`, `lwc-generator.mjs`, templates
   `.mustache`
 - **Tier 4 (UX):** `guided-mode.md` (da Skill 2), `quality-rubric.md`,
@@ -402,9 +424,17 @@ Detalhamento completo desse fluxo (mensagens exatas, formato das perguntas) fica
 | Templates + references estruturados | sf-skills | `assets/templates` + `references/*.md` |
 | Rubrica de pontuação como gate | sf-skills (120pt) | Adaptado para 100pt, gate em 80 (não 99%) |
 | Decision tree de root cause | sf-skills (`apex-test-run`) | A criar: LWC não renderiza / lento / falha validação |
+| **Craft de autoria de LWC** (bundle, `@wire`, a11y, Jest, PICKLES) | sf-skills (`experience-lwc-generate`) | **Importada na íntegra** para a Skill 2 — mesmo princípio do `apex-test-loop` com as skills de teste Apex |
+| **Craft de styling/tokens SLDS** | sf-skills (`design-systems-slds-apply`) | **Importada na íntegra** para a Skill 2 (Lightning Base Components > Blueprints > Styling Hooks > CSS) |
 
 `sf-skills` é licenciado Apache-2.0 — qualquer trecho de texto/código reaproveitado
 literalmente deve manter atribuição (NOTICE) no momento da implementação.
+Confirmado por pesquisa direta no repositório (94 skills, v1.31.0, LICENSE.txt
+Apache-2.0): **nenhuma skill oficial cobre o que a `lwc-pattern-documenter` faz**
+(aprender padrões específicos da org, por jornada/produto) — só o craft de geração
+(`experience-lwc-generate`) e de styling (`design-systems-slds-apply`) tem
+equivalente oficial, e ambos ficam restritos à Skill 2. Detalhes da pesquisa em
+`docs/PLANEJAMENTO.md`.
 
 ## 11. Decisões de Design (e porquês)
 
@@ -437,6 +467,12 @@ literalmente deve manter atribuição (NOTICE) no momento da implementação.
   decisões (bloquear, sinalizar, confirmar, avisar duplicidade) que não podem
   acontecer silenciosamente — por isso a Skill 1 também tem um fluxo guiado (seção 7),
   não é "aponta arquivo e sai processando".
+- **Craft de LWC delegado, não reinventado (só na Skill 2):** pesquisa confirmou que
+  `experience-lwc-generate` e `design-systems-slds-apply` do `sf-skills` já cobrem
+  autoria de LWC e styling/tokens SLDS com qualidade oficial — reinventar isso seria
+  duplicar esforço sem ganho. A `lwc-pattern-generator` importa as 2 na íntegra (só
+  as essenciais, sem `design-systems-slds-validate` por ora) e foca seu próprio
+  valor em injetar os padrões específicos da org, que não têm equivalente oficial.
 
 ## Próximos Passos
 
@@ -452,13 +488,18 @@ Este documento é o ponto de partida para discussão. Estado da validação item
 3. ✅ **Decidido:** a Skill 1 tem um guia inicial obrigatório (seção 7) — nunca
    executa direto a partir do input bruto; sempre passa pelos 9 passos de checkpoint
    antes de escrever no documento.
-4. Confirmar formato exato do `docs/design-patterns.md` (seção 4, "Exemplo de
+4. ✅ **Decidido:** a Skill 2 (`lwc-pattern-generator`, Tier 2+) importa na íntegra
+   `experience-lwc-generate` + `design-systems-slds-apply` do `sf-skills` para
+   delegar o craft de LWC — confirmado por pesquisa que nenhuma skill oficial cobre
+   o pattern-learning específico da org (seção 2 e 10). A Skill 1 não delega craft
+   (só lê e documenta).
+5. Confirmar formato exato do `docs/design-patterns.md` (seção 4, "Exemplo de
    estrutura") e do `journeys-index.json` (seção 6) — os templates propostos servem,
    ou precisam de mais/menos campos?
-5. Confirmar quais sinais de extração entram no `extraction-signals.md` e em que
+6. Confirmar quais sinais de extração entram no `extraction-signals.md` e em que
    ordem de prioridade, usando a primeira jornada real que o usuário for documentar
    como teste de validação (Tier 1).
-6. (Só relevante quando a Skill 2 entrar em cena) Confirmar as 3 camadas de segurança
+7. (Só relevante quando a Skill 2 entrar em cena) Confirmar as 3 camadas de segurança
    (seção 3) e a rubrica de 100 pontos (seção 5) — nenhuma mudança aqui ainda, ficam
    validadas quando chegar a hora do Tier 2+.
 
