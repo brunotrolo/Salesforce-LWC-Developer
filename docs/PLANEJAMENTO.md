@@ -214,18 +214,89 @@ final em [`docs/ARCHITECTURE.md`](ARCHITECTURE.md):
 - ✅ Requisitos de atribuição Apache-2.0 (NOTICE) documentados para quando templates
   do `sf-skills` forem de fato incorporados na implementação.
 
-## Próximos Passos (no momento em que este documento foi escrito)
+## Fase 3 — Refinamento: Duas Skills Sequenciais (pivô decidido com o usuário)
+
+Depois de registrar a arquitetura original (5 fases dentro de uma única skill,
+scan automático de toda a org num `patterns.json`), o usuário levantou uma dúvida
+central: **como garantir, na prática, que o documento de padrões realmente reflita o
+design system da org** — sem depender de um scan "confie em mim" de tudo de uma vez?
+
+### A pergunta que gerou o pivô
+
+> "minha maior duvida e como criar um markdown para respeitar o design system da
+> minha org"
+
+Resposta discutida: o mecanismo concreto é (1) scan automático extrai padrões em JSON
+→ (2) geração consulta o JSON e nunca inventa convenção → (3) rubrica de 100 pontos
+valida antes do preview → (4) conflito sempre negocia com o usuário. Esse mecanismo
+segue válido — mas o usuário então perguntou se alguém já fazia algo assim (pesquisa
+de viabilidade — ver resposta na conversa: **não existe ferramenta que combine** scan
+de padrões org-específicos + geração conforme + modo guiado + preview; peças soltas
+existem — Figma→LWC plugin da Salesforce, `sf-skills`, Storybook — mas não a
+combinação completa).
+
+### A proposta do usuário (o pivô real)
+
+> "acho que a primeira skill deve ser a identificacao de padrao de design dos
+> componentes // a ideia seria eu passar uma lista de arquivos e determinar um nome
+> de jornada ou produto e o opencode ou claude code escreveria o padrao de design e
+> escreveria em um documento // dai se eu precisar treinar ele com outra jornada e
+> produto ele acrescenta o padrao deste produto e jornada e assim por diante // quando
+> eu for pedir para desenvolver preciso informar qual a jornada ou produto a
+> referencia de design deve seguir"
+
+Isso muda 3 coisas na arquitetura original:
+
+1. **De "scan automático da org inteira" para "o usuário aponta os arquivos".** Mais
+   seguro (não há como o agente "escanear errado" algo que nunca devia tocar) e mais
+   curado (cada padrão documentado tem uma origem clara e rastreável).
+2. **De "1 registry JSON global" para "1 documento Markdown com 1 seção por
+   jornada/produto".** Jornadas diferentes podem ter convenções diferentes entre si —
+   isso vira algo esperado e documentado, não "unificado" à força.
+3. **De "1 skill monolítica com 5 fases" para "2 skills sequenciais e independentes":**
+   `lwc-pattern-documenter` (MVP, só lê arquivos e escreve Markdown — zero risco) e
+   `lwc-pattern-generator` (implementada depois, quando a primeira já estiver
+   validada na prática).
+
+### Por que esse pivô é melhor que o plano original
+
+- **Risco assimétrico administrado:** a Skill 1 não toca em nenhum componente — só lê
+  e documenta. Isso permite validar o "cérebro" (extração de padrões) antes de
+  arriscar o "corpo" (geração/edição de código real).
+- **MVP genuíno:** dá pra usar e tirar valor da Skill 1 sozinha, sem esperar a
+  arquitetura inteira ficar pronta.
+- **Sem "big bang":** o usuário controla o ritmo — documenta uma jornada, revisa,
+  documenta a próxima. Erros de extração aparecem cedo, numa jornada só, não
+  espalhados pelo registry inteiro.
+
+### O que mudou no `docs/ARCHITECTURE.md`
+
+- Nova seção 0 ("Decisão de Escopo — Duas Skills Sequenciais") explica o pivô.
+- Seção 1 (Visão Geral do Fluxo) reorganizada em torno das 2 skills.
+- Seção 2 (Ownership & Delegation) dividida entre as duas skills.
+- Seção 4 (Sistema de Aprendizado de Padrões) reescrita: de `patterns.json` global
+  para `docs/design-patterns.md` com 1 seção por jornada/produto, incremental
+  (acrescenta jornada nova, atualiza jornada existente, nunca sobrescreve as outras).
+- Seção 6 (Estrutura de Repositório) e seção 8 (Ordem de Implementação) atualizadas
+  para refletir 2 pastas de skill e um Tier 0 dedicado ao MVP da Skill 1.
+
+## Próximos Passos (atualizado após o pivô das 2 skills)
 
 Este planejamento e o `docs/ARCHITECTURE.md` formam a base de discussão antes de
 qualquer código da skill ser escrito. Os pontos em aberto para validação (replicados
 da seção "Próximos Passos" do ARCHITECTURE.md):
 
-1. Confirmar o modelo de Ownership & Delegation — faz sentido para o workflow real da
-   org do usuário?
-2. Confirmar as 3 camadas de segurança — algum ajuste necessário para o contexto de
-   LWC (vs. Apex)?
-3. Validar o algoritmo de descoberta de padrões — quais sinais são mais importantes
-   para a org específica do usuário?
-4. Validar a rubrica de 100 pontos — os pesos fazem sentido, ou precisam de ajuste
-   por prioridade (ex.: acessibilidade pesando mais)?
-5. Confirmar estrutura de repositório e ordem de implementação.
+1. ✅ **Decidido:** 2 skills sequenciais, começando pela `lwc-pattern-documenter`
+   (Tier 0 do MVP).
+2. Confirmar o algoritmo de extração de padrões da Skill 1 — quais sinais extrair
+   primeiro (naming, CSS/tokens, slots, eventos, a11y, performance) e em que ordem de
+   prioridade?
+3. Confirmar formato exato do `docs/design-patterns.md` — o template de seção por
+   jornada/produto proposto serve, ou precisa de ajustes?
+4. Confirmar o modelo de Ownership & Delegation entre as duas skills — faz sentido
+   para o workflow real da org do usuário?
+5. (Só relevante mais adiante, quando a Skill 2 entrar em cena) 3 camadas de
+   segurança e rubrica de 100 pontos — sem mudanças por enquanto.
+
+**Próximo passo prático:** implementar o Tier 0 (Skill 1, `lwc-pattern-documenter`) e
+validar com uma jornada real da org do usuário.
