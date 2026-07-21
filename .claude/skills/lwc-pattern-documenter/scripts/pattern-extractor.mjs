@@ -5,9 +5,12 @@
 //
 // E o "sinal deterministico" da skill lwc-pattern-documenter: em vez de o agente
 // ler cada arquivo e adivinhar convencoes, ele recebe um JSON compacto com os
-// sinais ja extraidos (naming, imports/decorators/eventos no JS, slots/ARIA/
-// diretivas no HTML, custom properties/cores no CSS, metadados) — POR componente
-// e AGREGADO, ja com deteccao de DIVERGENCIA entre componentes da mesma jornada.
+// sinais ja extraidos — POR componente e AGREGADO, com deteccao de DIVERGENCIA e
+// de CONVENCOES PARCIAIS. Alem do basico (naming, imports/decorators/eventos no JS,
+// slots/ARIA no HTML, custom properties/cores no CSS, metadados), extrai a RECEITA
+// necessaria para GERAR um componente no estilo da jornada: esqueleto estrutural do
+// HTML (composicao), classes utilitarias SLDS, padrao de loading/erro (spinner/toast),
+// forma da chamada Apex (then/await/try-catch/refreshApex), Custom Labels e testes Jest.
 //
 // Filosofia (herdada do apex-test-loop): o SCRIPT mede/extrai de forma mecanica;
 // o AGENTE julga, negocia divergencia com o usuario, e escreve o Markdown. O
@@ -110,6 +113,12 @@ function resolveComponent(p) {
       const f = join(p, `${name}${ext}`);
       return existsSync(f) ? f : null;
     };
+    // Teste Jest companheiro: <name>.test.js na pasta ou em __tests__/
+    const testFile =
+      pick('.test.js') ||
+      (existsSync(join(p, '__tests__', `${name}.test.js`))
+        ? join(p, '__tests__', `${name}.test.js`)
+        : null);
     return {
       name,
       path: p,
@@ -118,6 +127,7 @@ function resolveComponent(p) {
         html: pick('.html'),
         css: pick('.css'),
         meta: pick('.js-meta.xml'),
+        test: testFile,
       },
     };
   }
@@ -156,7 +166,40 @@ function extractJs(src) {
   );
   const usesApex = /@salesforce\/apex\//.test(src);
   const usesGraphql = /lightning\/uiGraphQLApi|graphql/i.test(src);
-  return { imports, decorators, events, lifecycle, usesApex, usesGraphql };
+
+  // (#5) Custom Labels / i18n — imports de @salesforce/label/Namespace.Nome
+  const labels = uniq(allMatches(/@salesforce\/label\/([^'"`]+)/g, src));
+
+  // (#3) Erro/feedback — ShowToastEvent e as variantes usadas (error/success/warning/info)
+  const usesShowToast = /ShowToastEvent/.test(src);
+  const toastVariants = uniq(allMatches(/variant\s*:\s*['"`](error|success|warning|info)['"`]/gi, src));
+
+  // (#3) Estado de loading — spinner/isLoading e afins
+  const hasLoadingState = /\b(isLoading|showSpinner|loading|isBusy|spinnerVisible)\b/i.test(src);
+
+  // (#4) Forma da chamada Apex imperativa
+  const apexCallStyle = usesApex
+    ? {
+        usesThen: /\.then\s*\(/.test(src),
+        usesAwait: /\bawait\b/.test(src),
+        usesTryCatch: /\btry\s*\{/.test(src),
+        refreshApex: /refreshApex/.test(src),
+      }
+    : null;
+
+  return {
+    imports,
+    decorators,
+    events,
+    lifecycle,
+    usesApex,
+    usesGraphql,
+    labels,
+    usesShowToast,
+    toastVariants,
+    hasLoadingState,
+    apexCallStyle,
+  };
 }
 
 function extractHtml(src) {
@@ -175,8 +218,21 @@ function extractHtml(src) {
   const roles = uniq(allMatches(/\brole\s*=\s*['"]([^'"]+)['"]/g, src));
   const hasTabindex = /\btabindex\s*=/.test(src);
   const hasAlt = /\balt\s*=/.test(src);
-  // Base components lightning-* usados
+  // Base components lightning-* e componentes custom c-* usados
   const lightningTags = uniq(allMatches(/<(lightning-[a-z0-9-]+)\b/g, src));
+  const customTags = uniq(allMatches(/<(c-[a-z0-9-]+)\b/g, src));
+
+  // (#2) Classes utilitarias SLDS usadas no HTML (class="slds-...") — parte enorme
+  // da convencao real de LWC/SLDS que so olhar o CSS nao captura.
+  const classVals = allMatches(/class\s*=\s*["']([^"']+)["']/g, src);
+  const sldsClasses = uniq(
+    classVals.flatMap((v) => v.split(/\s+/)).filter((c) => /^slds-/.test(c))
+  );
+
+  // (#1) Esqueleto estrutural — a "receita" de composicao (o que gerar exige)
+  const skeleton = htmlSkeleton(src);
+  const rootTag = skeleton.length ? skeleton[0].trim().replace(/[\s.[].*$/, '') : null;
+
   return {
     slots,
     directives,
@@ -186,7 +242,51 @@ function extractHtml(src) {
     hasAlt,
     a11yScore: aria.length + roles.length + (hasTabindex ? 1 : 0) + (hasAlt ? 1 : 0),
     lightningTags,
+    customTags,
+    sldsClasses,
+    rootTag,
+    skeleton,
   };
+}
+
+// (#1) Esqueleto estrutural do HTML: um outline indentado dos elementos ESTRUTURAIS
+// (lightning-*, c-*, containers de bloco, templates com diretiva), com dica de classe
+// SLDS e de diretiva. Nao e um parser completo — e um proxy deterministico da
+// composicao, suficiente para a Skill 2 saber "como os componentes desta jornada sao
+// montados" (nao so quais tags aparecem). Profundidade <= 3, ate 30 linhas.
+function htmlSkeleton(src) {
+  if (!src) return [];
+  const s = src.replace(/<!--[\s\S]*?-->/g, '');
+  const STRUCT =
+    /^(lightning-[a-z0-9-]+|c-[a-z0-9-]+|div|section|article|header|footer|main|aside|ul|ol|li|table|thead|tbody|tr|form|nav)$/i;
+  const lines = [];
+  const stack = [];
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)([^>]*?)(\/?)>/g;
+  let m;
+  while ((m = tagRe.exec(s)) !== null) {
+    const closing = m[1] === '/';
+    const tag = m[2].toLowerCase();
+    const attrs = m[3] || '';
+    const selfClose = m[4] === '/';
+    if (closing) {
+      const idx = stack.lastIndexOf(tag);
+      if (idx !== -1) stack.length = idx;
+      continue;
+    }
+    const dir = (attrs.match(/\b(for:each|lwc:if|lwc:elseif|lwc:else|if:true|if:false)\b/) || [])[1];
+    const isStruct = STRUCT.test(tag) || (tag === 'template' && dir);
+    if (!isStruct) continue;
+    if (stack.length <= 3 && lines.length < 30) {
+      const cls = (attrs.match(/class\s*=\s*["']([^"']+)["']/) || [])[1] || '';
+      const slds = cls.split(/\s+/).filter((c) => /^slds-/.test(c)).slice(0, 2);
+      let label = tag;
+      if (dir) label += ` [${dir}]`;
+      if (slds.length) label += ' .' + slds.join(' .');
+      lines.push('  '.repeat(stack.length) + label);
+    }
+    if (!selfClose) stack.push(tag);
+  }
+  return lines;
 }
 
 function extractCss(src) {
@@ -307,16 +407,85 @@ function aggregate(components) {
       allEvents: uniq(allEvents),
       wireUsers: valid.filter((c) => (c.js?.decorators?.wire || 0) > 0).length,
       apexUsers: valid.filter((c) => c.js?.usesApex).length,
+      // (#4) Forma da chamada Apex imperativa — a "receita" do call, nao so "usa Apex"
+      apexCallStyle: {
+        usesThen: valid.filter((c) => c.js?.apexCallStyle?.usesThen).length,
+        usesAwait: valid.filter((c) => c.js?.apexCallStyle?.usesAwait).length,
+        usesTryCatch: valid.filter((c) => c.js?.apexCallStyle?.usesTryCatch).length,
+        refreshApex: valid.filter((c) => c.js?.apexCallStyle?.refreshApex).length,
+      },
+      // (#3) Erro/feedback via toast
+      toast: {
+        users: valid.filter((c) => c.js?.usesShowToast).length,
+        variants: uniq(valid.flatMap((c) => c.js?.toastVariants || [])),
+      },
+      // (#3) Estado de loading
+      loadingStateUsers: valid.filter((c) => c.js?.hasLoadingState).length,
+      // (#5) Custom Labels / i18n
+      labelUsers: valid.filter((c) => (c.js?.labels || []).length).length,
+      allLabels: uniq(valid.flatMap((c) => c.js?.labels || [])),
     },
     html: {
       componentsWithSlots: withSlots.length,
       allSlots: uniq(valid.flatMap((c) => c.html?.slots || [])),
       allLightningTags: uniq(valid.flatMap((c) => c.html?.lightningTags || [])),
+      allCustomTags: uniq(valid.flatMap((c) => c.html?.customTags || [])),
+      // (#2) Classes utilitarias SLDS — as mais recorrentes (freq >= 2), com contagem
+      commonSldsClasses: freqTable(valid.flatMap((c) => uniq(c.html?.sldsClasses || [])), 2),
+      // (#1) Tag raiz mais comum (wrapper de topo) — parte da receita de composicao
+      rootTags: tally(valid.map((c) => c.html?.rootTag).filter(Boolean)),
+      spinnerUsers: valid.filter((c) => (c.html?.lightningTags || []).includes('lightning-spinner')).length,
       a11yAvg:
         valid.length ? Math.round((valid.reduce((s, c) => s + (c.html?.a11yScore || 0), 0) / valid.length) * 10) / 10 : 0,
     },
+    // (#6) Testes Jest companheiros
+    tests: {
+      componentsWithTests: valid.filter((c) => c.present?.test).length,
+      total: valid.length,
+    },
+    // Convencoes PARCIAIS: itens usados por um SUBCONJUNTO (2..n-1) — nem compartilhado
+    // por todos, nem unico de um. Fecha o "vao" (ex.: cor #888 em 2 de 9) que nao e
+    // divergencia formal nem elemento especifico. O agente registra como observacao.
+    partialConventions: partialConventions(valid),
     divergences,
   };
+}
+
+// Itens usados por um subconjunto de componentes (freq entre 2 e n-1), por dimensao
+// relevante para geracao. Retorna so as dimensoes com algum item parcial (cap 12/dim).
+function partialConventions(valid) {
+  const n = valid.length;
+  if (n < 3) return {};
+  const dims = {
+    sldsClasses: (c) => c.html?.sldsClasses || [],
+    lightningTags: (c) => c.html?.lightningTags || [],
+    imports: (c) => c.js?.imports || [],
+    labels: (c) => c.js?.labels || [],
+    hardcodedColors: (c) => c.css?.hardcodedColors || [],
+    events: (c) => c.js?.events || [],
+  };
+  const out = {};
+  for (const [dim, get] of Object.entries(dims)) {
+    const t = {};
+    for (const c of valid) for (const it of uniq(get(c))) t[it] = (t[it] || 0) + 1;
+    const partial = Object.entries(t)
+      .filter(([, cnt]) => cnt >= 2 && cnt < n)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([item, cnt]) => ({ item, count: cnt }));
+    if (partial.length) out[dim] = partial;
+  }
+  return out;
+}
+
+// Tabela de frequencia { item: count } para itens com freq >= min, ordenada desc.
+function freqTable(arr, min = 1) {
+  const t = {};
+  for (const x of arr) t[x] = (t[x] || 0) + 1;
+  return Object.entries(t)
+    .filter(([, c]) => c >= min)
+    .sort((a, b) => b[1] - a[1])
+    .map(([item, count]) => ({ item, count }));
 }
 
 // Elementos unicos de cada componente: para cada dimensao (slots, eventos, tokens,
@@ -329,7 +498,10 @@ function computeSpecifics(valid) {
     events: (c) => c.js?.events || [],
     tokens: (c) => c.css?.customPropsConsumed || [],
     lightningTags: (c) => c.html?.lightningTags || [],
+    customTags: (c) => c.html?.customTags || [],
+    sldsClasses: (c) => c.html?.sldsClasses || [],
     imports: (c) => c.js?.imports || [],
+    labels: (c) => c.js?.labels || [],
     directives: (c) => c.html?.directives || [],
     aria: (c) => c.html?.aria || [],
     hardcodedColors: (c) => c.css?.hardcodedColors || [],
@@ -408,6 +580,7 @@ const components = paths.map((p) => {
       html: !!c.files.html,
       css: !!c.files.css,
       meta: !!c.files.meta,
+      test: !!c.files.test,
     },
     naming: { raw: c.name, style: caseStyle(c.name) },
     js,

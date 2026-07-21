@@ -87,13 +87,24 @@ node .claude/skills/lwc-pattern-documenter/scripts/pattern-extractor.mjs \
   --components <pasta1>,<pasta2>,<pasta3> --journey "Nome da Jornada"
 ```
 
-O JSON de extracao traz, por componente e agregado: `naming` (estilo, prefixo comum),
-`js` (imports, decorators @api/@track/@wire, eventos, lifecycle), `html` (slots,
-diretivas, ARIA/roles, base components `lightning-*`), `css` (custom properties
-consumidas/definidas, `:host`, uso de SLDS, cores hardcoded), `meta` (apiVersion,
-isExposed, targets), `aggregate.divergences` (convencoes em conflito), `minComponentsMet`
-e `warnings`. O que cada sinal significa e a ordem de prioridade estao em
-`references/extraction-signals.md`.
+O JSON de extracao traz, por componente e agregado:
+- **Estrutura/composicao (a receita p/ gerar):** `html.skeleton` (outline indentado da
+  composicao), `aggregate.html.rootTags`, `customTags` (filhos `c-*`).
+- **Naming:** `naming.style`, `aggregate.naming.dominantStyle`/`commonPrefix`.
+- **CSS/SLDS:** `css` (custom properties consumidas/definidas, `:host`, cores hardcoded)
+  + `aggregate.html.commonSldsClasses` (classes utilitarias `slds-*` mais usadas).
+- **JS/dados:** imports, decorators, eventos, lifecycle; `aggregate.js.apexCallStyle`
+  (forma da chamada Apex: then/await/try-catch/refreshApex), `js.toast` (erro/feedback),
+  `loadingStateUsers`/`html.spinnerUsers` (loading), `labelUsers`/`allLabels` (i18n).
+- **Testes:** `aggregate.tests` (quantos tem `.test.js`).
+- **Curadoria:** `aggregate.componentSpecifics` (unico de 1 comp), `partialConventions`
+  (usado por um subconjunto), `aggregate.divergences` (conflito), `minComponentsMet`,
+  `warnings`.
+
+O que cada sinal significa, a ordem de prioridade e o template da secao estao em
+`references/extraction-signals.md`. **Lembre: documentar quer frequencia; GERAR quer a
+receita** — por isso estrutura, classes SLDS, loading/erro e forma do Apex sao de
+primeira classe, nao detalhes.
 
 > Sempre redirecione a saida para arquivo (`> extract.json`), nunca trunque por
 > `tail`/`head` — igual a licao R-0023 do apex-test-loop.
