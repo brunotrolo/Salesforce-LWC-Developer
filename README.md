@@ -1,55 +1,129 @@
-# Salesforce-LWC-Developer
+<p align="center">
+  <img src="assets/banner.svg" width="880" alt="Salesforce LWC Developer">
+</p>
 
-Skill para Claude Code que **aprende o design system de LWCs da sua org** (padrões
-construídos ao longo de anos de desenvolvimento customizado) e **gera/edita
-componentes Lightning Web Components** respeitando esses padrões — com fluxo
-interativo de requisitos, preview antes de deploy, e um registro vivo de padrões
-aprendidos.
+<p align="center">
+  <em>Aprende o design system de LWC da sua org e documenta os padrões &#8212; por jornada, com curadoria sua.</em>
+</p>
 
-> **Status:** a **Skill 1 (`lwc-pattern-documenter`)** está implementada — Tier 0
-> (MVP). Ela **aprende e documenta** os padrões de design por jornada/produto num
-> Markdown vivo. A **Skill 2 (`lwc-pattern-generator`)**, que gera/edita componentes,
-> ainda não foi construída. Veja [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+<p align="center">
+  <img src="https://img.shields.io/github/stars/brunotrolo/Salesforce-LWC-Developer?style=flat-square&color=00A1E0&label=stars" alt="Stars">
+  <img src="https://img.shields.io/badge/skill%201-documenter%20(Tier%200)-9C6BFF?style=flat-square" alt="Skill 1: documenter">
+  <img src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20OpenCode-032D60?style=flat-square" alt="Works with Claude Code and OpenCode">
+  <img src="https://img.shields.io/badge/craft-Salesforce%20sf--skills-00A1E0?style=flat-square" alt="Salesforce sf-skills">
+  <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
+</p>
 
-## As duas skills
+<p align="center">
+  <b>📄 README</b> &nbsp;·&nbsp; <a href="./docs/ARCHITECTURE.md">🏛️ Arquitetura</a> &nbsp;·&nbsp; <a href="./docs/PLANEJAMENTO.md">🧭 Planejamento</a> &nbsp;·&nbsp; <a href="./LICENSE">⚖️ MIT License</a>
+</p>
 
-**Skill 1 — `lwc-pattern-documenter` (implementada):** você aponta um conjunto de LWCs
-que representam uma jornada/produto (ex.: "Atendimento ao Cliente") + o nome dela, e a
-skill extrai as convenções (naming, CSS/tokens, slots, eventos, imports, acessibilidade)
-e **escreve/atualiza uma seção** em [`docs/lwc-design-system/design-patterns.md`](docs/lwc-design-system/design-patterns.md).
-O documento cresce incrementalmente, uma jornada por vez. Ela **só lê e documenta** —
-nunca gera nem edita componentes.
+---
 
-- **Guia inicial obrigatório** — nunca "recebe input e sai processando": confirma a
-  jornada, exige mínimo de 3 componentes, documenta divergência em vez de decidir
-  sozinha, e evita jornada duplicada.
-- **Sinal determinístico** — o script `pattern-extractor.mjs` faz a extração mecânica
-  dos sinais e emite JSON (mesma filosofia do `apex-coverage.mjs` do apex-test-loop).
-- **Preview antes de gravar** — nada vai para o documento sem você ver e aprovar.
+Skills para o Claude Code que **aprendem o design system de LWC da sua org** (padrões construídos ao longo de anos) e, no futuro, **geram componentes** que já nascem alinhados a ele. Tudo com **curadoria sua**: você aponta os arquivos, agrupa por **jornada/produto**, e o documento cresce incrementalmente.
 
-**Skill 2 — `lwc-pattern-generator` (a construir):** dado um requisito + qual
-jornada/produto usar como referência, gera um LWC que respeita aquele padrão —
-delegando o craft de LWC às skills oficiais `experience-lwc-generate` e
-`design-systems-slds-apply` do `forcedotcom/sf-skills`. Com preview antes de deploy.
+```
+você aponta os LWCs de uma jornada  →  extrai os sinais  →  você revisa o preview
+        ↑                                                            ↓
+        +--- documenta a seção da jornada em Markdown vivo ----------+
+```
 
-## Por que existe
+**Como funciona (duas skills):**
+- **Skill 1 — `lwc-pattern-documenter`** ✅ *(esta, implementada):* aprende e **documenta** os padrões por jornada num Markdown vivo. **Só lê e documenta** — nunca gera nem edita componentes.
+- **Skill 2 — `lwc-pattern-generator`** ⏳ *(a construir):* **gera/edita** LWCs respeitando a jornada de referência, **delegando o craft** às skills oficiais da Salesforce (`experience-lwc-generate` + `design-systems-slds-apply`, já importadas neste repo) e injetando por cima os padrões da sua org.
 
-Este projeto nasce da experiência com a skill
-[`apex-test-loop`](https://github.com/brunotrolo/Salesforce-LoopAgentApex) (agent
-loop de cobertura de testes Apex) — reaproveitando as lições de segurança em 3
-camadas, autoaprendizado via ledger local, e modo guiado em português — aplicadas
-agora ao domínio de LWC.
+> Mesmo princípio do [`Salesforce Apex Cover Loop`](https://github.com/brunotrolo/Salesforce-Apex-Cover-Loop): **orquestração nossa + craft oficial da Salesforce**.
 
-## Documentação
+---
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — arquitetura proposta: fluxo,
-  modelo de ownership/delegação, segurança em 3 camadas, sistema de aprendizado de
-  padrões, rubrica de qualidade, estrutura de repositório e decisões de design.
-- [`docs/PLANEJAMENTO.md`](docs/PLANEJAMENTO.md) — trilha de pesquisa que embasou a
-  arquitetura: comparação com `apex-test-loop` e com o repositório oficial
-  `forcedotcom/sf-skills`, matriz de decisão (reusar/adaptar/manter) e o "porquê"
-  por trás de cada escolha.
+## ⚡ Começo rápido
 
-## Licença
+### 1. Pré-requisitos
 
-[MIT](LICENSE)
+- **Node 18+** (para o extrator de padrões — script sem dependências).
+- **Projeto SFDX** com componentes em `force-app/*/lwc/` (os LWCs que a skill vai analisar).
+- **[Claude Code](https://docs.claude.com/en/docs/claude-code)** ou **[OpenCode](https://opencode.ai)**.
+
+> **Skill 1 roda 100% local** — ela só **lê** os arquivos de LWC e escreve Markdown. **Não** precisa de Salesforce CLI (`sf`), nem de conexão com a org, nem de deploy. (A Skill 2, quando existir, aí sim usará `sf` para preview/deploy.)
+
+> **Opcional — rodar de graça com [OpenCode](https://opencode.ai)** (sem key, sem GPU):
+> ```bash
+> npm install -g opencode-ai
+> opencode   # no app: /models → escolha "DeepSeek V4 Flash Free" (OpenCode Zen)
+> ```
+> A skill funciona igual no OpenCode (mesmo `.claude/skills/`).
+
+### 2. Instale — copie **apenas a pasta `.claude`** para o seu projeto
+
+Rode **de dentro da pasta do seu projeto** (onde está `force-app`). O comando clona este repo num diretório temporário, copia **só o `.claude/`** e apaga o resto:
+
+**Windows (PowerShell):**
+```powershell
+git clone --depth 1 https://github.com/brunotrolo/Salesforce-LWC-Developer.git .skill-tmp; New-Item -ItemType Directory -Force .claude | Out-Null; Copy-Item -Recurse -Force .skill-tmp\.claude\* .claude\; Remove-Item -Recurse -Force .skill-tmp
+```
+
+**Mac / Linux / Git Bash:**
+```bash
+git clone --depth 1 https://github.com/brunotrolo/Salesforce-LWC-Developer.git .skill-tmp && mkdir -p .claude && cp -r .skill-tmp/.claude/. .claude/ && rm -rf .skill-tmp
+```
+
+Isso instala a nossa skill (`lwc-pattern-documenter`) **e** as duas skills oficiais de craft, todas sob `.claude/skills/`.
+
+> **Já usa a [`apex-test-loop`](https://github.com/brunotrolo/Salesforce-Apex-Cover-Loop) no mesmo projeto?** A instalação é **aditiva e segura**: este repo **não traz `.claude/settings.json`**, então o comando acima **não sobrescreve** o `settings.json` (guard/segurança) da `apex-test-loop` — só acrescenta as pastas de skill. As duas convivem sem colisão. Detalhes na seção "🤝 Coexistência" de `.claude/skills/lwc-pattern-documenter/SKILL.md`.
+
+> **Para atualizar:** rode o mesmo comando de novo.
+
+### 3. Abra o Claude Code
+
+```bash
+claude
+```
+
+A skill carrega automaticamente a partir de `.claude/skills/`.
+
+### 4. Use
+
+```
+/lwc-pattern-documenter
+```
+
+ou naturalmente:
+> "documente os padrões de LWC da jornada Faturas"
+> "aprenda o design system desses componentes de Atendimento"
+
+A skill conduz um **roteiro de perguntas** (nunca "recebe e sai processando"): pergunta a jornada, quais arquivos analisar, extrai os sinais, mostra um **preview** e só então grava a seção em `docs/lwc-design-system/design-patterns.md`.
+
+---
+
+## 🧭 O que a skill registra
+
+Para cada jornada/produto, uma seção com:
+- **Padrões compartilhados** — naming, CSS/tokens, slots, eventos, dados (`@wire`/Apex), acessibilidade, metadados.
+- **Elementos específicos por componente** — o que é único de um só arquivo, atrelado a ele.
+- **⚠️ Convenções inconsistentes** — quando os componentes divergem, as variantes ficam registradas e a decisão é **sua** (a skill nunca escolhe sozinha).
+
+Regras de curadoria embutidas: seleção híbrida de arquivos, **mínimo de 3 componentes** por jornada, e lista canônica de jornadas (evita duplicar por variação de nome).
+
+---
+
+## 📖 Documentação Completa
+
+- **→ [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — arquitetura das duas skills, as 4 regras de curadoria, o guia de 9 etapas, coexistência com a `apex-test-loop`, e as decisões de design.
+- **→ [`docs/PLANEJAMENTO.md`](docs/PLANEJAMENTO.md)** — a trilha de pesquisa que embasou tudo (comparação com `apex-test-loop` e com o `forcedotcom/sf-skills`).
+
+---
+
+<p align="center">
+  ⭐ <b><a href="https://github.com/brunotrolo/Salesforce-LWC-Developer/stargazers">Dê uma star no repo</a></b> para ser avisado quando a Skill 2 (geração) e novas melhorias saírem.
+</p>
+
+<p align="center">
+  <sub>
+    Craft de LWC vindo das <b><a href="https://github.com/forcedotcom/sf-skills">skills oficiais da Salesforce</a></b> (<code>forcedotcom/sf-skills</code>, Apache-2.0) &nbsp;·&nbsp;
+    <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a>
+  </sub>
+</p>
+
+<p align="center">
+  <sub>Orquestração e aprendizado de padrões © <a href="https://github.com/brunotrolo">brunotrolo</a> · <a href="./LICENSE">MIT</a>. Skills <code>experience-lwc-generate</code> e <code>design-systems-slds-apply</code> redistribuídas sob Apache-2.0 (ver <code>.claude/skills/VENDOR-ATTRIBUTION.md</code>).</sub>
+</p>
