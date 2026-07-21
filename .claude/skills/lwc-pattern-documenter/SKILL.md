@@ -115,6 +115,12 @@ em `references/guided-mode.md`:
    escreva nada.
 6. **Interpretar os sinais** (usando `references/extraction-signals.md`) — traduza o
    JSON em convencoes legiveis (naming, CSS/tokens, slots, eventos, a11y, composicao).
+   **Registre TUDO** que foi identificado, em tres camadas: (a) **padroes
+   compartilhados** entre os componentes; (b) **elementos especificos** de um so
+   componente (`aggregate.componentSpecifics`) — atrelados ao arquivo de origem, pois
+   o usuario quer o que for muito especifico registrado como daquele componente; (c)
+   divergencias (etapa 7). Nao resuma a ponto de perder itens — o que nao entrar no
+   documento, a Skill 2 nao vera.
 7. **Tratar divergencia** — para cada item em `aggregate.divergences`, documente as
    variantes e marque "inconsistente"; nunca decida (regra 3).
 8. **Preview + aprovacao** — mostre ao usuario o Markdown EXATO que vai escrever na
@@ -127,9 +133,10 @@ em `references/guided-mode.md`:
 
 - `docs/design-patterns.md` — uma secao `## Padrao: <Jornada>` por jornada/produto, com
   componentes-fonte, data do scan, e as convencoes (naming, CSS/tokens, slots, eventos,
-  composicao, a11y). Divergencias ficam numa subsecao "⚠️ Convencoes inconsistentes".
-  Template e exemplo em `references/extraction-signals.md` e em `docs/ARCHITECTURE.md`
-  (secao 4).
+  composicao, a11y). **Elementos especificos de um componente** ficam numa subsecao
+  "Elementos especificos por componente" (atrelados ao arquivo); **divergencias** numa
+  subsecao "⚠️ Convencoes inconsistentes". Template completo em
+  `references/extraction-signals.md`.
 - `docs/journeys-index.json` — lista canonica: `[{ "journey", "components", "lastScan" }]`.
   Fonte de verdade da regra 4 (evitar duplicata) e do "estado atual" da etapa 1.
 

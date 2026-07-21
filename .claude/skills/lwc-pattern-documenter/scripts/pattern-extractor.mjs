@@ -288,6 +288,11 @@ function aggregate(components) {
 
   return {
     componentsScanned: valid.length,
+    // Elementos ESPECIFICOS: itens que aparecem em UM SO componente da jornada (nao
+    // compartilhados). Ex.: um slot, evento, token, import ou tag lightning-* que so
+    // aquele arquivo tem. A skill registra estes atrelados ao componente de origem
+    // (pedido explicito do usuario), separado dos padroes compartilhados.
+    componentSpecifics: computeSpecifics(valid),
     naming: {
       styleCounts,
       dominantStyle: dominant(styleCounts),
@@ -312,6 +317,38 @@ function aggregate(components) {
     },
     divergences,
   };
+}
+
+// Elementos unicos de cada componente: para cada dimensao (slots, eventos, tokens,
+// tags lightning-*, imports, diretivas, aria), lista os itens que SO aquele
+// componente tem (frequencia 1 entre os analisados). Retorna so os componentes que
+// tem algum item exclusivo.
+function computeSpecifics(valid) {
+  const dims = {
+    slots: (c) => c.html?.slots || [],
+    events: (c) => c.js?.events || [],
+    tokens: (c) => c.css?.customPropsConsumed || [],
+    lightningTags: (c) => c.html?.lightningTags || [],
+    imports: (c) => c.js?.imports || [],
+    directives: (c) => c.html?.directives || [],
+    aria: (c) => c.html?.aria || [],
+    hardcodedColors: (c) => c.css?.hardcodedColors || [],
+  };
+  const freq = {};
+  for (const [dim, get] of Object.entries(dims)) {
+    freq[dim] = {};
+    for (const c of valid) for (const it of uniq(get(c))) freq[dim][it] = (freq[dim][it] || 0) + 1;
+  }
+  return valid
+    .map((c) => {
+      const unique = {};
+      for (const [dim, get] of Object.entries(dims)) {
+        const u = uniq(get(c)).filter((it) => freq[dim][it] === 1);
+        if (u.length) unique[dim] = u;
+      }
+      return { component: c.name, unique };
+    })
+    .filter((x) => Object.keys(x.unique).length);
 }
 
 function tally(arr) {

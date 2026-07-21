@@ -96,11 +96,32 @@ Ao escrever (etapa 9), use esta estrutura por jornada:
 ### Metadados
 <apiVersion, targets tipicos>
 
+<!-- SO se `aggregate.componentSpecifics` tiver itens: -->
+### Elementos especificos por componente
+Itens que aparecem em UM SO componente desta jornada (nao sao padrao compartilhado,
+mas foram identificados e devem ficar registrados atrelados ao componente de origem):
+- **compA:** <slots/eventos/tokens/imports/tags/diretivas exclusivos deste componente>
+- **compB:** <...>
+
 <!-- SO se houver divergencias no aggregate: -->
 ### ⚠️ Convencoes inconsistentes nesta jornada
 - **<sinal>:** <as variantes encontradas, com quais componentes usam cada uma>.
   _Decisao pendente do usuario — a skill nao escolheu._
 ```
+
+**Distincao importante (compartilhado × especifico × divergente):**
+- **Padrao compartilhado** = o sinal aparece em varios componentes (vai nas secoes de
+  Naming, CSS, Slots, Eventos... como a convencao da jornada).
+- **Elemento especifico** (`aggregate.componentSpecifics`) = so UM componente tem
+  aquele item; nao e conflito, e so unico. Vai em "Elementos especificos por
+  componente", atrelado ao arquivo. (Pedido explicito do usuario: registrar tudo, e o
+  que for muito especifico de um arquivo fica marcado como daquele arquivo.)
+- **Divergencia** (`aggregate.divergences`) = os componentes DISCORDAM sobre a mesma
+  convencao (ex.: uns com token, outros com cor hardcoded). Vai em "⚠️ Convencoes
+  inconsistentes", com a decisao deixada para o usuario.
+
+Registre **todos** os elementos identificados — nao resuma a ponto de perder itens.
+O documento e a fonte que a Skill 2 vai usar; o que nao for registrado, ela nao vera.
 
 **Regras de escrita:**
 - Use **exemplos reais** extraidos dos componentes (o token real, o nome de evento

@@ -196,6 +196,13 @@ jornada/produto** (`## Padrão: <Nome da Jornada>`). Cada seção documenta:
 - Data do último scan daquela jornada
 - Naming convention, CSS/tokens, slots, eventos, composição, a11y, performance —
   com exemplos de código reais extraídos dos componentes apontados
+- **Elementos específicos de um componente** (pedido do usuário): itens que aparecem
+  em UM só componente da jornada (um slot, evento, token, import que só aquele arquivo
+  tem) são registrados numa subseção "Elementos específicos por componente", atrelados
+  ao arquivo de origem — separados dos padrões compartilhados e das divergências. O
+  `pattern-extractor.mjs` os detecta em `aggregate.componentSpecifics` (frequência 1
+  entre os componentes analisados). Objetivo: registrar TUDO que foi identificado, sem
+  perder o que é específico de um arquivo.
 
 **Comportamento incremental (a regra central):**
 - Jornada nova → **acrescenta** uma seção nova ao final do documento
