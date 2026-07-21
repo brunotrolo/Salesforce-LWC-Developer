@@ -156,6 +156,12 @@ function extractJs(src) {
     track: allMatches(/@track\b/g, src).length,
     wire: allMatches(/@wire\b/g, src).length,
   };
+  // Contrato publico: NOMES das propriedades/getters/metodos @api (o que o componente
+  // expoe por fora — o primeiro codigo que a geracao escreve).
+  const apiMembers = uniq(allMatches(/@api\s+(?:get\s+|set\s+)?(\w+)/g, src));
+  // Alvos do @wire: o adapter conectado (getRecord, getObjectInfo, CurrentPageReference,
+  // ou um metodo Apex importado) — padrao de acesso a dados.
+  const wireAdapters = uniq(allMatches(/@wire\s*\(\s*(\w+)/g, src));
   // Eventos customizados: new CustomEvent('nome' | "nome" | `nome`)
   const events = uniq(allMatches(/new\s+CustomEvent\s*\(\s*['"`]([^'"`]+)['"`]/g, src));
   const lifecycle = uniq(
@@ -190,6 +196,8 @@ function extractJs(src) {
   return {
     imports,
     decorators,
+    apiMembers,
+    wireAdapters,
     events,
     lifecycle,
     usesApex,
@@ -407,6 +415,11 @@ function aggregate(components) {
       allEvents: uniq(allEvents),
       wireUsers: valid.filter((c) => (c.js?.decorators?.wire || 0) > 0).length,
       apexUsers: valid.filter((c) => c.js?.usesApex).length,
+      // Contrato publico @api: nomes recorrentes (o que os componentes expoem por fora)
+      commonApiMembers: freqTable(valid.flatMap((c) => uniq(c.js?.apiMembers || [])), 2),
+      allApiMembers: uniq(valid.flatMap((c) => c.js?.apiMembers || [])),
+      // Alvos do @wire: adapters conectados (getRecord, getObjectInfo, Apex, page ref)
+      wireAdapters: freqTable(valid.flatMap((c) => uniq(c.js?.wireAdapters || [])), 1),
       // (#4) Forma da chamada Apex imperativa — a "receita" do call, nao so "usa Apex"
       apexCallStyle: {
         usesThen: valid.filter((c) => c.js?.apexCallStyle?.usesThen).length,
@@ -502,6 +515,8 @@ function computeSpecifics(valid) {
     sldsClasses: (c) => c.html?.sldsClasses || [],
     imports: (c) => c.js?.imports || [],
     labels: (c) => c.js?.labels || [],
+    apiMembers: (c) => c.js?.apiMembers || [],
+    wireAdapters: (c) => c.js?.wireAdapters || [],
     directives: (c) => c.html?.directives || [],
     aria: (c) => c.html?.aria || [],
     hardcodedColors: (c) => c.css?.hardcodedColors || [],

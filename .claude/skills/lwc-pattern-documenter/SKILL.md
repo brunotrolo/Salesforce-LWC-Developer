@@ -93,8 +93,10 @@ O JSON de extracao traz, por componente e agregado:
 - **Naming:** `naming.style`, `aggregate.naming.dominantStyle`/`commonPrefix`.
 - **CSS/SLDS:** `css` (custom properties consumidas/definidas, `:host`, cores hardcoded)
   + `aggregate.html.commonSldsClasses` (classes utilitarias `slds-*` mais usadas).
-- **JS/dados:** imports, decorators, eventos, lifecycle; `aggregate.js.apexCallStyle`
-  (forma da chamada Apex: then/await/try-catch/refreshApex), `js.toast` (erro/feedback),
+- **JS/dados:** imports, decorators, eventos, lifecycle; **contrato `@api`**
+  (`commonApiMembers`/`allApiMembers` — nomes das props publicas), **alvos `@wire`**
+  (`wireAdapters`), `aggregate.js.apexCallStyle` (forma da chamada Apex:
+  then/await/try-catch/refreshApex), `js.toast` (erro/feedback),
   `loadingStateUsers`/`html.spinnerUsers` (loading), `labelUsers`/`allLabels` (i18n).
 - **Testes:** `aggregate.tests` (quantos tem `.test.js`).
 - **Curadoria:** `aggregate.componentSpecifics` (unico de 1 comp), `partialConventions`

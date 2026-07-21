@@ -67,9 +67,14 @@ a futura `lwc-pattern-generator` mais vai consultar ao gerar.
 
 ## Prioridade 5 — Data & Decorators
 
-- **`js.decorators`** (`@api`, `@track`, `@wire`) — como o componente expoe API e
-  consome dados. `aggregate.js.wireUsers`/`apexUsers` mostram a estrategia de dados
-  dominante (wire adapters vs Apex imperativo).
+- **`aggregate.js.commonApiMembers`** / **`allApiMembers`** — **os NOMES das propriedades
+  `@api`** (contrato publico: `recordId`, `objectApiName`, etc.). E o que o componente
+  expoe por fora — o primeiro codigo que a geracao escreve. Registre o contrato tipico
+  da jornada.
+- **`aggregate.js.wireAdapters`** — **os ALVOS do `@wire`** (`getRecord`, `getObjectInfo`,
+  `CurrentPageReference`, ou um metodo Apex), com contagem. Padrao de acesso a dados.
+- **`js.decorators`** (`@api`, `@track`, `@wire`) — contagens. `aggregate.js.wireUsers`/
+  `apexUsers` mostram a estrategia dominante (wire adapters vs Apex imperativo).
 - **`js.imports`** — bibliotecas/modulos recorrentes (uiRecordApi, navigation, toast,
   Apex controllers). Imports repetidos entre componentes = convencao da org.
 - **`js.lifecycle`** — hooks usados.
@@ -146,8 +151,9 @@ classes utilitarias SLDS mais usadas (slds-grid, slds-p-around_*, slds-col...)>
 <convencao de nome de evento, com exemplos reais>
 
 ### Dados & Apex
-<@wire vs Apex imperativo; FORMA da chamada Apex (.then/.catch vs async-await vs
-try/catch; refreshApex); imports recorrentes>
+<contrato @api tipico (nomes: recordId, objectApiName...); alvos @wire (getRecord,
+getObjectInfo, Apex...); @wire vs Apex imperativo; FORMA da chamada Apex (.then/.catch
+vs async-await vs try/catch; refreshApex); imports recorrentes>
 
 ### Loading & Erro
 <padrao de loading (spinner + isLoading)? feedback de erro (ShowToastEvent, variante)?>
