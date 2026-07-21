@@ -11,6 +11,11 @@ a futura `lwc-pattern-generator` mais vai consultar ao gerar.
 > erro e forma da chamada Apex (abaixo) sao tao importantes quanto naming/tokens: sem
 > eles o documento diz "o que aparece" mas nao "como montar".
 
+> **Robustez (codigo comentado NAO conta):** o extrator remove comentarios
+> (`<!-- -->`, `//`, `/* */`) antes de extrair qualquer sinal. Uma tag/evento/import
+> comentado NAO vira padrao — senao o documento (e a Skill 2) herdaria "fantasmas". Se um
+> sinal esperado nao aparecer, cheque se ele nao esta comentado no fonte.
+
 ## Prioridade 0 — Estrutura / Composicao (a RECEITA — o mais importante para gerar)
 
 - **`html.skeleton`** (por componente) — um outline indentado dos elementos estruturais
@@ -67,13 +72,24 @@ a futura `lwc-pattern-generator` mais vai consultar ao gerar.
   precisa; informativo).
 - **`html.lightningTags`** — base components `lightning-*` usados: revela se a org
   prefere Lightning Base Components (recomendado pelo SLDS) vs HTML cru.
+- **`aggregate.html.commonBoundAttributes`** — **atributos passados por binding** aos
+  filhos/base components (`account-id={...}`, `records={...}`). E o contrato `@api` visto
+  do lado de QUEM CONSOME — metade da receita de composicao pai↔filho.
+- **`aggregate.html.allEventListeners`** — **handlers `on*={...}`** (a quais eventos os
+  componentes REAGEM). Junto com os eventos disparados (Prioridade 4), fecha o contrato
+  de comunicacao: quem dispara o que, e quem escuta o que.
 
 ## Prioridade 4 — Eventos (JavaScript)
 
 - **`js.events`** (nomes em `new CustomEvent('...')`) e **`aggregate.js.allEvents`**. A
   convencao de nome de evento e chave para composicao parent-child.
-- **Divergencia** (`js.eventNaming`): mistura de estilos (uns com prefixo `on`, outros
-  sem) → documentar o conflito.
+- **`aggregate.js.eventContracts`** — **a RECEITA do evento**, nao so o nome: por evento,
+  `{ bubbles, composed, detailKeys }`. `bubbles`/`composed` decidem se o evento chega ao
+  pai e se cruza o shadow DOM (decisoes opostas — errar gera componente que "nao funciona"
+  silenciosamente); `detailKeys` sao o contrato de payload que o handler do pai consome.
+  A Skill 2 TEM que reproduzir isso.
+- **Divergencia** (`js.eventNaming`): mistura de ESTILOS de nome de evento (lowercase vs
+  camelCase vs kebab-case) → documentar o conflito.
 
 ## Prioridade 5 — Data & Decorators
 
@@ -81,6 +97,14 @@ a futura `lwc-pattern-generator` mais vai consultar ao gerar.
   `@api`** (contrato publico: `recordId`, `objectApiName`, etc.). E o que o componente
   expoe por fora — o primeiro codigo que a geracao escreve. Registre o contrato tipico
   da jornada.
+- **`aggregate.js.apiDefaults`** — **os DEFAULTS do contrato `@api`** (`@api label = 'X'`,
+  `@api multiSelect = false`), lista `{ name, value }`. O default e metade do contrato
+  (muda comportamento): o componente novo deve nascer com `@api label = 'X'`, nao
+  `@api label;`. Registre-os junto do contrato.
+- **`aggregate.js.commonGetters`** / **`allGetters`** — **getters/computed properties**
+  (`get isLoading()`, `get modalClass()`, `get hasSelection()`). Sao a espinha do LWC
+  idiomatico — derivam estado em vez de logica no template. Os NOMES sao a receita; o
+  corpo fica no arquivo-fonte.
 - **`aggregate.js.wireAdapters`** — **os ALVOS do `@wire`** (`getRecord`, `getObjectInfo`,
   `CurrentPageReference`, ou um metodo Apex), com contagem. Padrao de acesso a dados.
 - **`js.decorators`** (`@api`, `@track`, `@wire`) — contagens. `aggregate.js.wireUsers`/
@@ -155,16 +179,21 @@ compartilhados (`sharedUtils`: modulo c/xUtil + os exports que a jornada assume)
 <usa tokens/SLDS custom properties? quais? :host? cores hardcoded? +
 classes utilitarias SLDS mais usadas (slds-grid, slds-p-around_*, slds-col...)>
 
-### Slots
-<slots nomeados, se houver (muitas jornadas nao usam)>
+### Slots & Composicao pai↔filho
+<slots nomeados, se houver (muitas jornadas nao usam); atributos passados aos filhos
+(`commonBoundAttributes`, ex.: account-id={...}); handlers escutados (`allEventListeners`,
+ex.: onaccountselect)>
 
 ### Eventos
-<convencao de nome de evento, com exemplos reais>
+<convencao de nome de evento; para cada evento recorrente, a RECEITA de `eventContracts`:
+bubbles/composed e as chaves de detail (ex.: `accountselect` — bubbles:true, composed:false,
+detail: { accountId, accountName })>
 
 ### Dados & Apex
-<contrato @api tipico (nomes: recordId, objectApiName...); alvos @wire (getRecord,
-getObjectInfo, Apex...); @wire vs Apex imperativo; FORMA da chamada Apex (.then/.catch
-vs async-await vs try/catch; refreshApex); imports recorrentes>
+<contrato @api tipico (nomes: recordId, objectApiName...) + DEFAULTS (`apiDefaults`, ex.:
+label = 'Select Record'); getters/computed recorrentes (`commonGetters`, ex.: get isLoading);
+alvos @wire (getRecord, getObjectInfo, Apex...); @wire vs Apex imperativo; FORMA da chamada
+Apex (.then/.catch vs async-await vs try/catch; refreshApex); imports recorrentes>
 
 ### Loading & Erro
 <padrao de loading (spinner + isLoading)? feedback de erro (ShowToastEvent, variante)?>

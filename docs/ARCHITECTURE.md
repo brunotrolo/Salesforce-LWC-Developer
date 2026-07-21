@@ -1,8 +1,9 @@
 # Arquitetura — Salesforce LWC Developer Skill
 
-> **Status:** Documento de proposta para discussão. Nenhuma linha de código da skill
-> foi escrita ainda — este documento existe para validarmos a arquitetura antes de
-> implementar.
+> **Status:** Skill 1 (`lwc-pattern-documenter`) **implementada** — SKILL.md, os scripts
+> `pattern-extractor.mjs` (extração) e `pattern-writer.mjs` (escrita determinística) e as
+> referências existem e estão testados. A Skill 2 (`lwc-pattern-generator`) segue como
+> proposta a implementar depois. Este documento descreve a arquitetura das duas.
 
 ## Contexto
 
@@ -42,13 +43,17 @@ INPUT:
   - Nome da jornada/produto (ex.: "Atendimento ao Cliente")
   ↓
 PROCESSO:
-  1. Scan dos arquivos apontados (não a org inteira — só o que foi informado)
-  2. Extrai: naming, CSS/tokens, slots, eventos, imports, composição, a11y, performance
-  3. Escreve/acrescenta uma seção "## Padrão: <Jornada/Produto>" no documento de padrões
-  4. Se a jornada já existe no documento → ATUALIZA a seção (nunca duplica)
-  5. Se é uma jornada nova → ACRESCENTA nova seção (nunca sobrescreve as outras)
+  1. Scan dos arquivos apontados (não a org inteira — só o que foi informado), via
+     pattern-extractor.mjs (extração determinística; código comentado é ignorado)
+  2. Extrai: estrutura/composição (skeleton, modalSkeleton, sharedUtils), naming,
+     CSS/tokens/SLDS, slots + wiring pai↔filho, eventos (bubbles/composed/detail),
+     @api + defaults + getters + @wire + forma do Apex, loading/erro, i18n, a11y, metadata
+  3. O agente interpreta os sinais e monta a seção "## Padrão: <Jornada/Produto>"
+  4. pattern-writer.mjs grava de forma DETERMINÍSTICA: jornada nova → ACRESCENTA;
+     existente → substitui SÓ a seção dela; upsert do índice; trava aborta se perderia
+     alguma jornada. A escrita nunca depende do modelo lembrar de preservar o resto.
   ↓
-OUTPUT: .lwc-pattern-documenter/lwc-design-system/design-patterns.md (ou um arquivo por jornada — ver seção 4)
+OUTPUT: .lwc-pattern-documenter/lwc-design-system/design-patterns.md + journeys-index.json
 ```
 
 ### Skill 2 — `lwc-pattern-generator` (a implementar DEPOIS, quando a Skill 1 estiver validada)
@@ -182,10 +187,11 @@ editando silenciosamente (sempre negocia com o usuário).
 
 **Descoberta (Skill 1):** o usuário roda a `lwc-pattern-documenter` informando (a) uma
 lista de arquivos LWC que representam bem uma jornada/produto e (b) o nome dessa
-jornada/produto. A skill extrai: naming conventions, uso de slots, arquitetura CSS
-(tokens, scoping), padrões JS (imports, decorators, event naming), composição
-(parent-child), acessibilidade (ARIA, foco), performance (`@wire`, lazy load) — **só
-dos arquivos apontados**, não da org inteira.
+jornada/produto. A skill extrai: estrutura/composição (skeleton, modalSkeleton,
+sharedUtils), naming conventions, uso de slots + wiring pai↔filho, arquitetura CSS
+(tokens, scoping), padrões JS (imports, decorators, contrato `@api` + defaults, getters,
+eventos com bubbles/composed/detail, `@wire`, forma do Apex), acessibilidade (ARIA, foco)
+— **só dos arquivos apontados**, não da org inteira.
 
 **Armazenamento:** `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` — um único documento Markdown,
 versionado em git, legível por humano, organizado em **uma seção por
@@ -194,8 +200,9 @@ jornada/produto** (`## Padrão: <Nome da Jornada>`). Cada seção documenta:
 - Componentes-fonte usados como referência (rastreabilidade — "de onde veio esse
   padrão")
 - Data do último scan daquela jornada
-- Naming convention, CSS/tokens, slots, eventos, composição, a11y, performance —
-  com exemplos de código reais extraídos dos componentes apontados
+- Estrutura/composição, naming, CSS/tokens, slots + wiring pai↔filho, eventos
+  (contratos), dados (@api + defaults, getters, @wire, Apex), a11y — com exemplos de
+  código reais extraídos dos componentes apontados
 - **Elementos específicos de um componente** (pedido do usuário): itens que aparecem
   em UM só componente da jornada (um slot, evento, token, import que só aquele arquivo
   tem) são registrados numa subseção "Elementos específicos por componente", atrelados
@@ -232,8 +239,7 @@ guia inicial:
    na seção do documento e sinaliza explicitamente como "convenção inconsistente
    nesta jornada", deixando a decisão para o usuário resolver quando quiser.
 4. **Lista canônica de jornadas/produtos.** A skill mantém um índice de jornadas já
-   documentadas (`journeys-index.json` ou uma lista no topo do
-   `design-patterns.md` — ver seção 6) e, ao receber um nome novo, verifica
+   documentadas no `journeys-index.json` e, ao receber um nome novo, verifica
    similaridade com os já existentes (ex.: "Atendimento" vs. "Atendimento ao
    Cliente") — avisando o usuário antes de criar uma seção potencialmente duplicada
    por variação de digitação.
@@ -317,9 +323,10 @@ Salesforce-LWC-Developer/
 │       ├── lwc-pattern-documenter/             # SKILL 1 — MVP, implementar primeiro
 │       │   ├── SKILL.md                        # Triggers, owns, workflow de extração+escrita
 │       │   ├── scripts/
-│       │   │   └── pattern-extractor.mjs       # Le arquivos apontados, extrai padroes
+│       │   │   ├── pattern-extractor.mjs       # Le arquivos apontados, extrai padroes (determinístico)
+│       │   │   └── pattern-writer.mjs          # Grava/mescla design-patterns.md + índice (determinístico)
 │       │   └── references/
-│       │       ├── extraction-signals.md       # O que extrair (naming, css, slots, eventos...)
+│       │       ├── extraction-signals.md       # O que extrair (estrutura, naming, css, eventos, dados...)
 │       │       └── guided-mode.md              # Fluxo do guia inicial (secao 7) — passo a passo
 │       │
 │       ├── lwc-pattern-generator/              # SKILL 2 — depois de validar a Skill 1
@@ -395,16 +402,19 @@ uma nunca sobrescreve a outra:
    nunca assume que a primeira lista informada é a definitiva.
 5. **Verifica o mínimo de 3 componentes** (regra 2 da seção 4). Se não bater, **para
    aqui** e pede mais exemplos — não escreve nada no documento.
-6. **Extrai os padrões** dos arquivos confirmados (naming, CSS/tokens, slots,
-   eventos, composição, a11y, performance — ver `extraction-signals.md`).
+6. **Extrai os padrões** dos arquivos confirmados (estrutura/composição, naming,
+   CSS/tokens, slots + wiring pai↔filho, eventos, dados @api/getters/@wire/Apex, a11y —
+   ver `extraction-signals.md`).
 7. **Se encontrar divergência** entre os componentes da mesma jornada, documenta as
    variantes e sinaliza — nunca decide sozinha qual é a "oficial" (regra 3 da
    seção 4).
 8. **Mostra um preview do que vai escrever** na seção do Markdown ANTES de salvar —
    aprovação explícita do usuário.
-9. **Escreve/atualiza a seção** em `design-patterns.md` e atualiza o
-   `journeys-index.json` (nome novo → adiciona ao índice; atualização → só bate a
-   data do último scan).
+9. **Grava de forma determinística via `pattern-writer.mjs`** (nunca reescrevendo o
+   arquivo à mão): jornada nova → ACRESCENTA a seção; existente → substitui só a seção
+   dela; upsert do `journeys-index.json` (nome/componentes/data); trava de integridade
+   aborta se o merge fosse perder qualquer jornada. Isso elimina a classe de bug em que
+   um modelo, reescrevendo o arquivo inteiro, apaga uma jornada já documentada.
 
 Detalhamento completo desse fluxo (mensagens exatas, formato das perguntas) fica em
 `references/guided-mode.md` da própria skill, a escrever no Tier 0.
@@ -426,7 +436,7 @@ Detalhamento completo desse fluxo (mensagens exatas, formato das perguntas) fica
 ## 9. Arquivos Críticos — Ordem de Implementação
 
 - **Tier 0 (MVP — Skill 1, `lwc-pattern-documenter`):** `SKILL.md` +
-  `pattern-extractor.mjs` + `extraction-signals.md` + `guided-mode.md` +
+  `pattern-extractor.mjs` + `pattern-writer.mjs` + `extraction-signals.md` + `guided-mode.md` +
   `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` + `.lwc-pattern-documenter/lwc-design-system/journeys-index.json` (arquivos iniciais
   vazios/template). Sem segurança de escrita de componente (não aplicável — a skill
   só lê arquivos e escreve Markdown/JSON de índice).

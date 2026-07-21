@@ -40,8 +40,11 @@ escreva nada no documento.
 
 ## Etapa 6 — Interpretar os sinais
 Com `references/extraction-signals.md` na mao, traduza o JSON em convencoes legiveis, na
-ordem de prioridade (naming → CSS/tokens → slots → eventos → dados → a11y → metadados).
-Use exemplos reais extraidos, nunca inventados.
+ordem de prioridade: **Estrutura/Composicao (Prioridade 0 — a receita: skeleton,
+modalSkeleton, sharedUtils) → naming → CSS/tokens/SLDS → slots & composicao pai↔filho →
+eventos (contratos bubbles/composed/detail) → dados (@api + defaults, getters, @wire,
+Apex) → loading/erro → i18n → a11y → metadados**. Use exemplos reais extraidos, nunca
+inventados. Registre TUDO — o que nao entrar no documento, a Skill 2 nao vera.
 
 ## Etapa 7 — Tratar divergencia (regra 3)
 Para cada item em `aggregate.divergences`, **nao decida**. Prepare a subsecao

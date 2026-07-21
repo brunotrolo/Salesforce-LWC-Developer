@@ -70,6 +70,21 @@ function uniq(arr) {
   return [...new Set(arr.filter((x) => x != null && x !== ''))];
 }
 
+// Remocao de COMENTARIOS antes de qualquer extracao. Codigo comentado NAO e padrao —
+// se vazasse, o extrator reportaria imports/eventos/tags/cores/ARIA que nao existem e a
+// Skill 2 geraria em cima de "fantasmas". Estrategia conservadora: comentarios de bloco
+// (/* */ e <!-- -->) + comentarios de LINHA INTEIRA (^//). Evita mexer em `//` dentro de
+// strings/URLs (esses nunca comecam a linha), cobrindo o caso real de codigo comentado.
+function stripJsComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+}
+function stripHtmlComments(src) {
+  return src.replace(/<!--[\s\S]*?-->/g, '');
+}
+function stripCssComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
 // ---------------------------------------------------------------------------
 // MODO --list: enumerar LWCs sob uma raiz (para o menu de selecao interativo)
 // ---------------------------------------------------------------------------
@@ -150,6 +165,7 @@ function resolveComponent(p) {
 // ---------------------------------------------------------------------------
 function extractJs(src) {
   if (!src) return null;
+  src = stripJsComments(src); // codigo comentado nao e padrao — remove antes de extrair
   const imports = uniq(allMatches(/import\s+[^;]*?from\s+['"]([^'"]+)['"]/g, src));
   const decorators = {
     api: allMatches(/@api\b/g, src).length,
@@ -157,13 +173,38 @@ function extractJs(src) {
     wire: allMatches(/@wire\b/g, src).length,
   };
   // Contrato publico: NOMES das propriedades/getters/metodos @api (o que o componente
-  // expoe por fora — o primeiro codigo que a geracao escreve).
-  const apiMembers = uniq(allMatches(/@api\s+(?:get\s+|set\s+)?(\w+)/g, src));
+  // expoe por fora — o primeiro codigo que a geracao escreve). Consome TODOS os
+  // modificadores (async/static/get/set) antes do nome — senao `@api async reload()`
+  // reportaria "async" como membro publico (bug real).
+  const apiMembers = uniq(allMatches(/@api\s+(?:(?:async|static|get|set)\s+)*(\w+)/g, src));
+  // (#GAP1) Defaults do contrato @api: `@api label = 'X'` — o valor default e metade do
+  // contrato (muda comportamento). A Skill 2 precisa gerar `@api label = 'X'`, nao `@api label;`.
+  const apiDefaults = allMatches(/@api\s+(?:(?:async|static)\s+)*(\w+)\s*=\s*([^;\n]+)/g, src, 0)
+    .map((full) => {
+      const mm = full.match(/@api\s+(?:(?:async|static)\s+)*(\w+)\s*=\s*([^;\n]+)/);
+      return { name: mm[1], value: mm[2].trim() };
+    });
+  // (#GAP4) Getters/computed properties (spine do LWC idiomatico): get name() {...}.
+  // Nome do getter e a receita; o corpo fica no arquivo. Exclui os que ja sao @api getter.
+  const getters = uniq(allMatches(/(?:^|[^.\w])get\s+(\w+)\s*\(\s*\)/g, src));
   // Alvos do @wire: o adapter conectado (getRecord, getObjectInfo, CurrentPageReference,
   // ou um metodo Apex importado) — padrao de acesso a dados.
   const wireAdapters = uniq(allMatches(/@wire\s*\(\s*(\w+)/g, src));
-  // Eventos customizados: new CustomEvent('nome' | "nome" | `nome`)
-  const events = uniq(allMatches(/new\s+CustomEvent\s*\(\s*['"`]([^'"`]+)['"`]/g, src));
+  // Eventos customizados: new CustomEvent('nome', { bubbles, composed, detail }).
+  // (#GAP2) Captura tambem a FIACAO do evento — bubbles/composed decidem se o evento
+  // chega ao pai / cruza shadow DOM (decisoes opostas), e as chaves de `detail` sao o
+  // contrato de payload que o handler do pai consome.
+  const eventDetails = allMatches(/new\s+CustomEvent\s*\(\s*['"`]([^'"`]+)['"`]([\s\S]{0,220}?\))/g, src, 0)
+    .map((full) => {
+      const nameM = full.match(/new\s+CustomEvent\s*\(\s*['"`]([^'"`]+)['"`]/);
+      const name = nameM[1];
+      const bubbles = /bubbles\s*:\s*true/.test(full);
+      const composed = /composed\s*:\s*true/.test(full);
+      const detailBlock = (full.match(/detail\s*:\s*\{([^}]*)\}/) || [])[1] || '';
+      const detailKeys = uniq(allMatches(/(\w+)\s*:/g, detailBlock));
+      return { name, bubbles, composed, detailKeys };
+    });
+  const events = uniq(eventDetails.map((e) => e.name));
   const lifecycle = uniq(
     allMatches(
       /\b(connectedCallback|disconnectedCallback|renderedCallback|errorCallback|constructor)\s*\(/g,
@@ -171,7 +212,8 @@ function extractJs(src) {
     )
   );
   const usesApex = /@salesforce\/apex\//.test(src);
-  const usesGraphql = /lightning\/uiGraphQLApi|graphql/i.test(src);
+  // GraphQL: baseado em IMPORT real do adapter (nao substring "graphql" solta).
+  const usesGraphql = imports.some((i) => /uiGraphQLApi|graphql/i.test(i));
 
   // (#5) Custom Labels / i18n — imports de @salesforce/label/Namespace.Nome
   const labels = uniq(allMatches(/@salesforce\/label\/([^'"`]+)/g, src));
@@ -180,8 +222,9 @@ function extractJs(src) {
   const usesShowToast = /ShowToastEvent/.test(src);
   const toastVariants = uniq(allMatches(/variant\s*:\s*['"`](error|success|warning|info)['"`]/gi, src));
 
-  // (#3) Estado de loading — spinner/isLoading e afins
-  const hasLoadingState = /\b(isLoading|showSpinner|loading|isBusy|spinnerVisible)\b/i.test(src);
+  // (#3) Estado de loading — nomes de flag especificos (evita casar a palavra "loading"
+  // solta em qualquer string/identificador).
+  const hasLoadingState = /\b(isLoading|showSpinner|spinnerVisible|isBusy|_loading|loadingState)\b/.test(src);
 
   // (#4) Forma da chamada Apex imperativa
   const apexCallStyle = usesApex
@@ -197,8 +240,11 @@ function extractJs(src) {
     imports,
     decorators,
     apiMembers,
+    apiDefaults,
+    getters,
     wireAdapters,
     events,
+    eventDetails,
     lifecycle,
     usesApex,
     usesGraphql,
@@ -212,6 +258,7 @@ function extractJs(src) {
 
 function extractHtml(src) {
   if (!src) return null;
+  src = stripHtmlComments(src); // markup comentado nao e padrao — remove antes de extrair
   // Slots: <slot name="x"> (nomeados) e <slot> (default)
   const named = uniq(allMatches(/<slot\b[^>]*\bname\s*=\s*['"]([^'"]+)['"]/g, src));
   const hasDefaultSlot = /<slot\b(?![^>]*\bname\s*=)[^>]*>/.test(src);
@@ -229,6 +276,14 @@ function extractHtml(src) {
   // Base components lightning-* e componentes custom c-* usados
   const lightningTags = uniq(allMatches(/<(lightning-[a-z0-9-]+)\b/g, src));
   const customTags = uniq(allMatches(/<(c-[a-z0-9-]+)\b/g, src));
+
+  // (#GAP5) Fiacao pai↔filho — a outra metade do contrato de composicao/eventos:
+  //  - eventListeners: handlers `on*={...}` (a quais eventos o componente REAGE).
+  //  - boundAttributes: atributos kebab passados por binding `attr={...}` (o que o pai
+  //    seta nos filhos/base components — o contrato @api visto do lado de quem consome).
+  const eventListeners = uniq(allMatches(/\bon([a-z][a-zA-Z0-9]*)\s*=\s*\{/g, src));
+  const boundAttributes = uniq(allMatches(/\b([a-z][a-z0-9-]*)\s*=\s*\{[^}]+\}/g, src)
+    .filter((a) => !/^on[a-z]/i.test(a) && !['key', 'class', 'style'].includes(a)));
 
   // (#2) Classes utilitarias SLDS usadas no HTML (class="slds-...") — parte enorme
   // da convencao real de LWC/SLDS que so olhar o CSS nao captura.
@@ -251,6 +306,8 @@ function extractHtml(src) {
     a11yScore: aria.length + roles.length + (hasTabindex ? 1 : 0) + (hasAlt ? 1 : 0),
     lightningTags,
     customTags,
+    eventListeners,
+    boundAttributes,
     sldsClasses,
     rootTag,
     skeleton,
@@ -264,12 +321,18 @@ function extractHtml(src) {
 // montados" (nao so quais tags aparecem). Profundidade <= 3, ate 30 linhas.
 function htmlSkeleton(src) {
   if (!src) return [];
-  const s = src.replace(/<!--[\s\S]*?-->/g, '');
+  const s = stripHtmlComments(src);
   const STRUCT =
     /^(lightning-[a-z0-9-]+|c-[a-z0-9-]+|div|section|article|header|footer|main|aside|ul|ol|li|table|thead|tbody|tr|form|nav)$/i;
+  // Atributos-chave que fazem parte da RECEITA (nao so a tag): variante/label de botao,
+  // icone, role/aria do modal, etc. Ajudam a Skill 2 a reproduzir o componente, nao so a
+  // arvore de tags.
+  const KEY_ATTRS = ['variant', 'label', 'icon-name', 'type', 'role', 'aria-modal', 'name', 'title'];
   const lines = [];
   const stack = [];
-  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)([^>]*?)(\/?)>/g;
+  // O grupo de atributos aceita `>` DENTRO de aspas (ex.: data-tip="a > b") — senao o
+  // regex cortaria no `>` interno e perderia class/atributos daquela tag.
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:"[^"]*"|'[^']*'|[^>])*?)(\/?)>/g;
   let m;
   while ((m = tagRe.exec(s)) !== null) {
     const closing = m[1] === '/';
@@ -286,9 +349,17 @@ function htmlSkeleton(src) {
     if (!isStruct) continue;
     if (stack.length <= 3 && lines.length < 30) {
       const cls = (attrs.match(/class\s*=\s*["']([^"']+)["']/) || [])[1] || '';
-      const slds = cls.split(/\s+/).filter((c) => /^slds-/.test(c)).slice(0, 2);
+      const slds = cls.split(/\s+/).filter((c) => /^slds-/.test(c)).slice(0, 3);
+      const keyAttrs = KEY_ATTRS
+        .map((a) => {
+          const v = (attrs.match(new RegExp('\\b' + a.replace(/[-]/g, '\\-') + '\\s*=\\s*["\']([^"\']+)["\']')) || [])[1];
+          return v ? `${a}="${v}"` : null;
+        })
+        .filter(Boolean)
+        .slice(0, 3);
       let label = tag;
       if (dir) label += ` [${dir}]`;
+      if (keyAttrs.length) label += ' ' + keyAttrs.join(' ');
       if (slds.length) label += ' .' + slds.join(' .');
       lines.push('  '.repeat(stack.length) + label);
     }
@@ -299,16 +370,25 @@ function htmlSkeleton(src) {
 
 function extractCss(src) {
   if (!src) return null;
+  src = stripCssComments(src);
   // Custom properties CONSUMIDAS: var(--x)  e DEFINIDAS: --x:
   const consumed = uniq(allMatches(/var\(\s*(--[a-z0-9-]+)/gi, src));
   const defined = uniq(allMatches(/(^|[;{]\s*)(--[a-z0-9-]+)\s*:/gi, src, 2));
   const usesHost = /:host\b/.test(src);
   const usesSlds = consumed.some((v) => /^--slds-|^--lwc-|^--sds-/i.test(v));
-  // Cores hardcoded: #hex, rgb()/rgba(), hsl()
+  // Cores HARDCODED de verdade (o anti-sinal). Antes de escanear, remove os falsos
+  // positivos que confundiam a divergencia "tokens x hardcoded":
+  //  (a) string literals (`content: "#000"`),
+  //  (b) valores de DEFINICAO de token (`--brand: #1b96ff;` e tokenizacao, nao hardcode),
+  //  (c) fallbacks dentro de `var(--x, #005fb2)`.
+  const scan = src
+    .replace(/"[^"]*"|'[^']*'/g, '""')
+    .replace(/--[a-z0-9-]+\s*:\s*[^;}]+/gi, '')
+    .replace(/var\([^)]*\)/g, '');
   const hardcodedColors = uniq([
-    ...allMatches(/#[0-9a-fA-F]{3,8}\b/g, src, 0),
-    ...allMatches(/\brgba?\([^)]*\)/g, src, 0),
-    ...allMatches(/\bhsla?\([^)]*\)/g, src, 0),
+    ...allMatches(/#[0-9a-fA-F]{3,8}\b/g, scan, 0),
+    ...allMatches(/\brgba?\([^)]*\)/g, scan, 0),
+    ...allMatches(/\bhsla?\([^)]*\)/g, scan, 0),
   ]);
   return { customPropsConsumed: consumed, customPropsDefined: defined, usesHost, usesSlds, hardcodedColors };
 }
@@ -373,16 +453,26 @@ function resolveSharedUtils(valid) {
     }
     let exportsList = [];
     if (src) {
-      const fns = allMatches(/export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)/g, src, 0).map((full) => {
+      src = stripJsComments(src);
+      // funcoes (inclui `export default function nome()`)
+      const fns = allMatches(/export\s+(?:default\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)/g, src, 0).map((full) => {
         const mm = full.match(/function\s+(\w+)\s*\(([^)]*)\)/);
         return `${mm[1]}(${mm[2].trim()})`;
       });
+      // export const nome = ...  E  export const { parseA, parseB } = ... (destructuring)
       const consts = allMatches(/export\s+const\s+(\w+)/g, src);
+      const constDestruct = allMatches(/export\s+const\s+\{\s*([^}]+)\s*\}/g, src).flatMap((grp) =>
+        grp.split(',').map((x) => x.trim().split(/[:=]/)[0].trim()).filter(Boolean)
+      );
+      // export { a, b as c } → o nome IMPORTAVEL e o depois de `as` (c), senao o proprio (a)
       const named = allMatches(/export\s*\{\s*([^}]+)\s*\}/g, src).flatMap((grp) =>
-        grp.split(',').map((x) => x.trim().split(/\s+as\s+/)[0]).filter(Boolean)
+        grp.split(',').map((x) => {
+          const parts = x.trim().split(/\s+as\s+/);
+          return (parts[1] || parts[0] || '').trim();
+        }).filter(Boolean)
       );
       const classes = allMatches(/export\s+(?:default\s+)?class\s+(\w+)/g, src).map((n) => `class ${n}`);
-      exportsList = uniq([...fns, ...consts, ...named, ...classes]);
+      exportsList = uniq([...fns, ...consts, ...constDestruct, ...named, ...classes]);
     }
     shared.push({ module: `c/${mod}`, importedBy: users.size, components: [...users].sort(), exports: exportsList });
   }
@@ -421,14 +511,17 @@ function aggregate(components) {
     });
   }
 
-  // Event naming: estilo dos nomes de evento (camelCase? tem prefixo "on"?)
-  const allEvents = valid.flatMap((c) => c.js?.events || []);
-  if (allEvents.length) {
-    const withOnPrefix = allEvents.filter((e) => /^on[A-Z]/.test(e)).length;
-    if (withOnPrefix && withOnPrefix < allEvents.length) {
+  // Event naming: consistencia do ESTILO dos nomes de evento. LWC dispara em minusculas,
+  // mas a org pode misturar all-lowercase (`quotaselection`) com camelCase (`quotaSelection`)
+  // ou kebab (`quota-selection`). Se ha mistura real, e uma divergencia a documentar.
+  const allEvents = uniq(valid.flatMap((c) => c.js?.events || []));
+  if (allEvents.length > 1) {
+    const evStyle = (e) => (/-/.test(e) ? 'kebab-case' : /[A-Z]/.test(e) ? 'camelCase' : 'lowercase');
+    const evStyles = uniq(allEvents.map(evStyle));
+    if (evStyles.length > 1) {
       divergences.push({
         signal: 'js.eventNaming',
-        detail: `Nomes de evento inconsistentes: alguns com prefixo "on" e outros sem (${uniq(allEvents).join(', ')}).`,
+        detail: `Estilos de nome de evento inconsistentes (${evStyles.join(' vs ')}): ${allEvents.join(', ')}.`,
       });
     }
   }
@@ -460,6 +553,14 @@ function aggregate(components) {
       // Contrato publico @api: nomes recorrentes (o que os componentes expoem por fora)
       commonApiMembers: freqTable(valid.flatMap((c) => uniq(c.js?.apiMembers || [])), 2),
       allApiMembers: uniq(valid.flatMap((c) => c.js?.apiMembers || [])),
+      // (#GAP1) Defaults do contrato @api (name = value) — metade do contrato; o
+      // componente novo deve nascer com `@api label = 'X'`, nao `@api label;`.
+      apiDefaults: dedupeBy(valid.flatMap((c) => c.js?.apiDefaults || []), (d) => `${d.name}=${d.value}`),
+      // (#GAP4) Getters/computed properties (spine do LWC idiomatico) recorrentes
+      commonGetters: freqTable(valid.flatMap((c) => uniq(c.js?.getters || [])), 2),
+      allGetters: uniq(valid.flatMap((c) => c.js?.getters || [])),
+      // (#GAP2) Contrato de eventos: bubbles/composed + chaves de `detail` por evento
+      eventContracts: eventContracts(valid),
       // Alvos do @wire: adapters conectados (getRecord, getObjectInfo, Apex, page ref)
       wireAdapters: freqTable(valid.flatMap((c) => uniq(c.js?.wireAdapters || [])), 1),
       // (#4) Forma da chamada Apex imperativa — a "receita" do call, nao so "usa Apex"
@@ -487,6 +588,10 @@ function aggregate(components) {
       allSlots: uniq(valid.flatMap((c) => c.html?.slots || [])),
       allLightningTags: uniq(valid.flatMap((c) => c.html?.lightningTags || [])),
       allCustomTags: uniq(valid.flatMap((c) => c.html?.customTags || [])),
+      // (#GAP5) Fiacao pai↔filho: handlers on* que os componentes escutam, e atributos
+      // passados por binding (o contrato @api visto do lado de quem consome o filho).
+      allEventListeners: uniq(valid.flatMap((c) => c.html?.eventListeners || [])),
+      commonBoundAttributes: freqTable(valid.flatMap((c) => uniq(c.html?.boundAttributes || [])), 2),
       // (#2) Classes utilitarias SLDS — as mais recorrentes (freq >= 2), com contagem
       commonSldsClasses: freqTable(valid.flatMap((c) => uniq(c.html?.sldsClasses || [])), 2),
       // (#1) Tag raiz mais comum (wrapper de topo) — parte da receita de composicao
@@ -525,6 +630,9 @@ function partialConventions(valid) {
     labels: (c) => c.js?.labels || [],
     hardcodedColors: (c) => c.css?.hardcodedColors || [],
     events: (c) => c.js?.events || [],
+    getters: (c) => c.js?.getters || [],
+    eventListeners: (c) => c.html?.eventListeners || [],
+    boundAttributes: (c) => c.html?.boundAttributes || [],
   };
   const out = {};
   for (const [dim, get] of Object.entries(dims)) {
@@ -565,7 +673,10 @@ function computeSpecifics(valid) {
     imports: (c) => c.js?.imports || [],
     labels: (c) => c.js?.labels || [],
     apiMembers: (c) => c.js?.apiMembers || [],
+    getters: (c) => c.js?.getters || [],
     wireAdapters: (c) => c.js?.wireAdapters || [],
+    eventListeners: (c) => c.html?.eventListeners || [],
+    boundAttributes: (c) => c.html?.boundAttributes || [],
     directives: (c) => c.html?.directives || [],
     aria: (c) => c.html?.aria || [],
     hardcodedColors: (c) => c.css?.hardcodedColors || [],
@@ -601,6 +712,36 @@ function tally(arr) {
   const o = {};
   for (const x of arr) o[x] = (o[x] || 0) + 1;
   return o;
+}
+
+// Dedup preservando ordem, por chave computada.
+function dedupeBy(arr, keyFn) {
+  const seen = new Set();
+  const out = [];
+  for (const x of arr) {
+    const k = keyFn(x);
+    if (!seen.has(k)) { seen.add(k); out.push(x); }
+  }
+  return out;
+}
+
+// (#GAP2) Contrato de eventos agregado: por nome de evento, se ALGUM componente o
+// dispara com bubbles/composed e a uniao das chaves de `detail`. E o que decide se o
+// evento chega ao pai / cruza shadow DOM — receita que a Skill 2 precisa reproduzir.
+function eventContracts(valid) {
+  const map = {};
+  for (const c of valid) {
+    for (const e of c.js?.eventDetails || []) {
+      const m = (map[e.name] = map[e.name] || { name: e.name, bubbles: false, composed: false, detail: new Set(), count: 0 });
+      m.bubbles = m.bubbles || e.bubbles;
+      m.composed = m.composed || e.composed;
+      (e.detailKeys || []).forEach((k) => m.detail.add(k));
+      m.count++;
+    }
+  }
+  return Object.values(map)
+    .sort((a, b) => b.count - a.count)
+    .map((m) => ({ name: m.name, bubbles: m.bubbles, composed: m.composed, detailKeys: [...m.detail], count: m.count }));
 }
 function fmtCounts(o) {
   return Object.entries(o)

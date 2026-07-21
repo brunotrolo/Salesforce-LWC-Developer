@@ -98,11 +98,16 @@ O JSON de extracao traz, por componente e agregado:
 - **Naming:** `naming.style`, `aggregate.naming.dominantStyle`/`commonPrefix`.
 - **CSS/SLDS:** `css` (custom properties consumidas/definidas, `:host`, cores hardcoded)
   + `aggregate.html.commonSldsClasses` (classes utilitarias `slds-*` mais usadas).
-- **JS/dados:** imports, decorators, eventos (`aggregate.js.allEvents`), lifecycle;
-  **contrato `@api`** (`commonApiMembers`/`allApiMembers` — nomes das props publicas),
-  **alvos `@wire`** (`wireAdapters`), `aggregate.js.apexCallStyle` (forma da chamada Apex:
-  then/await/try-catch/refreshApex), `js.toast` (`{users,variants}` — erro/feedback),
-  `loadingStateUsers`/`html.spinnerUsers` (loading), `labelUsers`/`allLabels` (i18n).
+- **JS/dados:** imports, decorators, lifecycle; **contrato `@api`** (`commonApiMembers`/
+  `allApiMembers` — nomes — **e `apiDefaults`** — os valores default `@api x = 'v'`),
+  **getters/computed** (`commonGetters`/`allGetters`), **alvos `@wire`** (`wireAdapters`),
+  `aggregate.js.apexCallStyle` (forma da chamada Apex: then/await/try-catch/refreshApex),
+  `js.toast` (`{users,variants}` — erro/feedback), `loadingStateUsers`/`html.spinnerUsers`
+  (loading), `labelUsers`/`allLabels` (i18n).
+- **Eventos & composicao pai↔filho:** `aggregate.js.eventContracts` (por evento:
+  bubbles/composed + chaves de `detail` — a receita, nao so o nome), `aggregate.js.allEvents`;
+  `aggregate.html.allEventListeners` (handlers `on*` escutados) e
+  `aggregate.html.commonBoundAttributes` (atributos passados aos filhos: `account-id={...}`).
 - **Testes:** `aggregate.tests` (quantos tem `.test.js`).
 - **Curadoria:** `aggregate.componentSpecifics` (unico de 1 comp), `partialConventions`
   (usado por um subconjunto), `aggregate.divergences` (conflito), `minComponentsMet`,
