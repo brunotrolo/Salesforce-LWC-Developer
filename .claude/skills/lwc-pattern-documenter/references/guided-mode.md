@@ -31,12 +31,24 @@ Antes de extrair, repita a lista final de componentes e peca confirmacao:
 *"Vou analisar estes 3: userPicker, caseForm, statusTimeline. Confirma?"* Nunca assuma
 que a primeira lista e a definitiva.
 
-## Etapa 5 — Extrair e checar o minimo (regra 2)
-Rode o extrator (`--components ... --journey "..." > extract.json`). Se
-`minComponentsMet` for `false` (menos de 3 validos), **PARE**:
+## Etapa 5 — Extrair e checar os limites (regra 2: piso 3, teto ~10)
+Rode o extrator (`--components ... --journey "..." > extract.json`).
+
+**Piso (HARD):** se `minComponentsMet` for `false` (menos de 3 validos), **PARE**:
 *"So consegui 2 componentes validos. Preciso de pelo menos 3 para documentar um padrao
 com confianca — 2 nao provam convencao. Pode apontar mais algum dessa jornada?"* Nao
 escreva nada no documento.
+
+**Teto (SOFT):** se `withinRecommendedMax` for `false` (mais de ~10), **NAO pare** — sugira:
+*"Voce apontou 18 componentes. Da pra documentar todos, mas listas grandes aumentam o
+risco de eu esquecer detalhes no caminho. Recomendo quebrar em sub-jornadas coesas — ex.:
+'Consorcio – Cotas' e 'Consorcio – Assembleia', cada uma como uma secao. Quer dividir
+assim, ou prefere que eu analise a lista inteira de uma vez?"*
+- **Se dividir:** rode o extrator uma vez por sub-lista, cada uma com seu nome de
+  sub-jornada, e grave cada uma como sua propria secao (uma execucao da etapa 6–9 por sub).
+- **Se manter a lista inteira:** RESPEITE — prossiga com todos e, na etapa 6, interprete o
+  `aggregate` **por secao** (estrutura, depois naming, depois CSS...) em vez de tudo de uma
+  vez, pra nao perder itens. Nunca trunque a lista por conta propria.
 
 ## Etapa 6 — Interpretar os sinais
 Com `references/extraction-signals.md` na mao, traduza o JSON em convencoes legiveis, na

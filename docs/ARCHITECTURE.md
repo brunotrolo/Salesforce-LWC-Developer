@@ -228,10 +228,12 @@ guia inicial:
    diretamente (já sabe onde estão) OU pedir que a skill liste os LWCs existentes no
    projeto para escolher de um menu. O guia inicial (seção 7) sempre pergunta qual
    dos dois o usuário prefere — nunca assume.
-2. **Mínimo de 3 componentes por jornada.** Se o usuário apontar menos de 3
-   componentes para uma jornada (nova ou em atualização), a skill **bloqueia a
-   extração** e pede mais exemplos antes de escrever qualquer seção no documento.
-   Menos que isso não gera confiança suficiente para virar "padrão documentado".
+2. **Quantidade saudável por jornada: piso 3 (hard), teto ~10 (soft).** Abaixo de 3
+   componentes a skill **bloqueia a extração** (menos que isso não gera confiança para
+   virar "padrão documentado"). Acima de ~10 (`recommendedMax`), a skill **não bloqueia**,
+   mas **sugere dividir em sub-jornadas coesas** — listas longas aumentam o risco de o
+   modelo (em especial os mais fracos) esquecer itens ao interpretar. Se o usuário
+   preferir manter a lista inteira, a skill respeita e interpreta o resultado por seção.
 3. **Divergência entre componentes da mesma jornada → documentada, nunca decidida
    pela skill.** Se os arquivos apontados para uma jornada usarem convenções
    diferentes entre si (ex.: 2 componentes com prefixo `c_` e 3 com `x_`), a skill

@@ -54,8 +54,16 @@ inicial obrigatorio — cada uma exige uma checagem ANTES de escrever:
 1. **Selecao hibrida.** O usuario informa os caminhos dos LWCs diretamente OU pede que
    voce liste os componentes do projeto para escolher de um menu. **Sempre pergunte
    qual dos dois** — nunca assuma.
-2. **Minimo de 3 componentes por jornada.** Menos de 3 nao prova convencao, prova
-   coincidencia. Se vier menos, **bloqueie a extracao** e peca mais exemplos.
+2. **Quantidade saudavel por jornada: piso 3, teto ~10.**
+   - **Piso (HARD): 3 componentes.** Menos de 3 nao prova convencao, prova coincidencia —
+     se `minComponentsMet` for `false`, **bloqueie a extracao** e peca mais exemplos.
+   - **Teto (SOFT): ~10 componentes** (`recommendedMax`). Acima disso o modelo (em especial
+     os mais fracos, tipo DeepSeek) tende a **esquecer itens** ao interpretar a lista longa.
+     Quando `withinRecommendedMax` for `false`, **NAO bloqueie**: SUGIRA ao usuario quebrar
+     em **sub-jornadas coesas** (ex.: "Consorcio – Cotas", "Consorcio – Assembleia"), cada
+     uma como sua propria secao. **Se o usuario preferir manter a lista inteira, RESPEITE** —
+     prossiga com todos e interprete o `aggregate` por SECAO (estrutura → naming → CSS →
+     eventos → dados...), nao tudo de uma vez.
 3. **Divergencia e documentada, nunca decidida.** Se os componentes usam convencoes
    diferentes entre si (ex.: 2 com token de cor, 1 com cor hardcoded), **registre as
    variantes** na secao e marque como "convencao inconsistente nesta jornada". Nunca
@@ -110,8 +118,9 @@ O JSON de extracao traz, por componente e agregado:
   `aggregate.html.commonBoundAttributes` (atributos passados aos filhos: `account-id={...}`).
 - **Testes:** `aggregate.tests` (quantos tem `.test.js`).
 - **Curadoria:** `aggregate.componentSpecifics` (unico de 1 comp), `partialConventions`
-  (usado por um subconjunto), `aggregate.divergences` (conflito), `minComponentsMet`,
-  `warnings`.
+  (usado por um subconjunto), `aggregate.divergences` (conflito), `minComponentsMet`
+  (piso 3 — bloqueia), `withinRecommendedMax`/`recommendedMax` (teto ~10 — sugere dividir,
+  nao bloqueia), `warnings`.
 
 O que cada sinal significa, a ordem de prioridade e o template da secao estao em
 `references/extraction-signals.md`. **Lembre: documentar quer frequencia; GERAR quer a
@@ -141,9 +150,15 @@ em `references/guided-mode.md`:
 3. **Modo de selecao** — pergunte: "voce tem os caminhos, ou quer que eu liste os LWCs
    do projeto?" (regra 1). Se listar, use `--list`.
 4. **Confirmar a lista final** de componentes antes de extrair — checkpoint explicito.
-5. **Rodar o extrator e checar o minimo** — `--components ... --journey ...`. Se
-   `minComponentsMet` for `false`, **PARE** e peca mais componentes (regra 2). Nao
-   escreva nada.
+   Se a lista tiver **mais de ~10** componentes, avise aqui que vale dividir em
+   sub-jornadas coesas (regra 2, teto) — mas so quebre se o usuario topar; senao respeite
+   a lista inteira.
+5. **Rodar o extrator e checar os limites** — `--components ... --journey ...`.
+   - Se `minComponentsMet` for `false`, **PARE** e peca mais componentes (regra 2, piso).
+     Nao escreva nada.
+   - Se `withinRecommendedMax` for `false`, **NAO pare**: apresente a sugestao de
+     sub-jornadas (regra 2, teto). Se o usuario mantiver a lista inteira, prossiga e
+     interprete o `aggregate` por SECAO (etapa 6) para nao perder itens.
 6. **Interpretar os sinais** (usando `references/extraction-signals.md`) — traduza o
    JSON em convencoes legiveis (naming, CSS/tokens, slots, eventos, a11y, composicao).
    **Registre TUDO** que foi identificado, em tres camadas: (a) **padroes

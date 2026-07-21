@@ -27,6 +27,9 @@
 //                 interativo — regra 1 da arquitetura: caminho manual OU menu).
 //   --min N       minimo de componentes para considerar o padrao confiavel
 //                 (padrao 3 — regra 2 da arquitetura; abaixo disso, minComponentsMet=false).
+//   --max N       teto RECOMENDADO de componentes por analise (padrao 10). NAO bloqueia:
+//                 acima dele, withinRecommendedMax=false + warning sugerindo dividir em
+//                 sub-jornadas coesas (o modelo fraco tende a esquecer itens em listas grandes).
 //
 // Requisitos: Node 18+. Zero dependencias externas.
 // ---------------------------------------------------------------------------
@@ -778,6 +781,9 @@ if (typeof compArg !== 'string') {
 
 const journey = typeof arg('journey') === 'string' ? arg('journey') : null;
 const minN = Number(arg('min', 3)) || 3;
+// Teto RECOMENDADO (nao bloqueia) — acima disso, o modelo (em especial os mais fracos)
+// corre risco de "esquecer" itens ao interpretar. Sugere quebrar em sub-jornadas coesas.
+const maxN = Number(arg('max', 10)) || 10;
 
 const paths = compArg.split(',').map((s) => s.trim()).filter(Boolean);
 const components = paths.map((p) => {
@@ -808,12 +814,24 @@ const components = paths.map((p) => {
 const missing = components.filter((c) => c.missing).map((c) => c.path);
 const agg = aggregate(components);
 const minComponentsMet = agg.componentsScanned >= minN;
+// Teto recomendado: SOFT (nunca bloqueia). Acima dele, sugere dividir em sub-jornadas.
+const withinRecommendedMax = agg.componentsScanned <= maxN;
 
 const warnings = [];
 if (!minComponentsMet) {
   warnings.push(
     `Apenas ${agg.componentsScanned} componente(s) valido(s) — minimo ${minN} para documentar com confianca ` +
       `(regra 2 da arquitetura). BLOQUEIE a escrita e peca mais exemplos.`
+  );
+}
+if (!withinRecommendedMax) {
+  warnings.push(
+    `${agg.componentsScanned} componentes excede o TETO RECOMENDADO de ${maxN} para uma unica analise. ` +
+      `Isso NAO bloqueia — mas SUGIRA ao usuario quebrar em sub-jornadas coesas (ex.: ` +
+      `"${journey || '<Jornada>'} – <Subtema A>", "${journey || '<Jornada>'} – <Subtema B>"), cada uma como ` +
+      `sua propria secao, para o modelo nao esquecer itens no caminho (regra 2, teto). ` +
+      `Se o usuario preferir manter a LISTA INTEIRA, RESPEITE: prossiga com todos, e interprete ` +
+      `o 'aggregate' por SECAO (estrutura, depois naming, depois CSS...) em vez de tudo de uma vez.`
   );
 }
 if (missing.length) warnings.push(`Caminhos nao encontrados: ${missing.join(', ')}.`);
@@ -829,6 +847,8 @@ emit({
   journey,
   min: minN,
   minComponentsMet,
+  recommendedMax: maxN,
+  withinRecommendedMax,
   componentsScanned: agg.componentsScanned,
   components: components.filter((c) => !c.missing),
   missing: missing.length ? missing : undefined,
