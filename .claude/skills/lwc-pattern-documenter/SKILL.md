@@ -89,14 +89,19 @@ node .claude/skills/lwc-pattern-documenter/scripts/pattern-extractor.mjs \
 
 O JSON de extracao traz, por componente e agregado:
 - **Estrutura/composicao (a receita p/ gerar):** `html.skeleton` (outline indentado da
-  composicao), `aggregate.html.rootTags`, `customTags` (filhos `c-*`).
+  composicao), `aggregate.html.representativeSkeleton` e `aggregate.html.modalSkeleton`
+  (esqueletos ja escolhidos, prontos para colar — o de modal separado do de grid),
+  `aggregate.html.rootTags`, `customTags` (filhos `c-*`).
+- **Utilitarios compartilhados:** `aggregate.js.sharedUtils` — a superficie de API dos
+  `c/xUtil` importados por varios componentes (o extrator LE o util e lista os exports).
+  Se 14/18 importam `c/consorcioUtil`, o componente novo TEM que usa-lo corretamente.
 - **Naming:** `naming.style`, `aggregate.naming.dominantStyle`/`commonPrefix`.
 - **CSS/SLDS:** `css` (custom properties consumidas/definidas, `:host`, cores hardcoded)
   + `aggregate.html.commonSldsClasses` (classes utilitarias `slds-*` mais usadas).
-- **JS/dados:** imports, decorators, eventos, lifecycle; **contrato `@api`**
-  (`commonApiMembers`/`allApiMembers` — nomes das props publicas), **alvos `@wire`**
-  (`wireAdapters`), `aggregate.js.apexCallStyle` (forma da chamada Apex:
-  then/await/try-catch/refreshApex), `js.toast` (erro/feedback),
+- **JS/dados:** imports, decorators, eventos (`aggregate.js.allEvents`), lifecycle;
+  **contrato `@api`** (`commonApiMembers`/`allApiMembers` — nomes das props publicas),
+  **alvos `@wire`** (`wireAdapters`), `aggregate.js.apexCallStyle` (forma da chamada Apex:
+  then/await/try-catch/refreshApex), `js.toast` (`{users,variants}` — erro/feedback),
   `loadingStateUsers`/`html.spinnerUsers` (loading), `labelUsers`/`allLabels` (i18n).
 - **Testes:** `aggregate.tests` (quantos tem `.test.js`).
 - **Curadoria:** `aggregate.componentSpecifics` (unico de 1 comp), `partialConventions`
@@ -110,6 +115,14 @@ primeira classe, nao detalhes.
 
 > Sempre redirecione a saida para arquivo (`> extract.json`), nunca trunque por
 > `tail`/`head` — igual a licao R-0023 do apex-test-loop.
+
+## Escrita deterministica — `pattern-writer.mjs`
+
+A escrita dos dois arquivos de saida **tambem e mecanica** — nunca reescreva a mao. O
+`pattern-writer.mjs` faz o merge seguro (jornada nova anexa; existente substitui so a
+sua secao; upsert do index; trava que aborta se fosse perder alguma jornada). Ver etapa
+9. Motivo concreto: um modelo reescrevendo o arquivo inteiro **ja apagou uma jornada ja
+gravada** — o script elimina essa classe de bug.
 
 ## O GUIA INICIAL (9 etapas obrigatorias)
 
@@ -138,9 +151,18 @@ em `references/guided-mode.md`:
    variantes e marque "inconsistente"; nunca decida (regra 3).
 8. **Preview + aprovacao** — mostre ao usuario o Markdown EXATO que vai escrever na
    secao, ANTES de salvar. So prossiga com o "ok" explicito.
-9. **Escrever/atualizar** — grave a secao em `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` (nova → anexa;
-   existente → atualiza a secao daquela jornada, nunca duplica) e atualize o
-   `.lwc-pattern-documenter/lwc-design-system/journeys-index.json` (nome novo → adiciona; atualizacao → so a data do scan).
+9. **Escrever/atualizar (DETERMINISTICO — nunca a mao)** — ⚠️ **NUNCA reescreva os dois
+   arquivos manualmente.** Um modelo reescrevendo o arquivo inteiro ja APAGOU uma jornada
+   ja gravada (bug real). Use SEMPRE o `pattern-writer.mjs`, que faz o merge mecanico:
+   ```bash
+   # salve a secao aprovada na etapa 8 em section.md, depois:
+   node .claude/skills/lwc-pattern-documenter/scripts/pattern-writer.mjs \
+     --journey "Nome da Jornada" --components compA,compB,compC --section section.md
+   ```
+   O writer garante: jornada nova → **anexa** sem tocar nas existentes; existente →
+   substitui **so** a secao `## Padrao: <Nome>` dela, preservando cabecalho, ordem e as
+   demais jornadas; upsert seguro do `journeys-index.json` (nunca zera o array); e uma
+   **trava de integridade** que aborta se o merge fosse perder qualquer jornada.
 
 ## Formato e local do documento
 

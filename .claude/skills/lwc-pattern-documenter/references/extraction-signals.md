@@ -19,10 +19,20 @@ a futura `lwc-pattern-generator` mais vai consultar ao gerar.
   sao montados (ex.: `lightning-card > div.slds-grid > template[lwc:if] > ...`), nao so
   quais tags existem. Registre o esqueleto REPRESENTATIVO da jornada (o padrao comum;
   se variam, mostre 1-2 exemplos reais).
+- **`aggregate.html.representativeSkeleton`** — `{ component, skeleton }`: o esqueleto
+  mais completo da jornada, **ja escolhido pelo extrator**. Cole-o na secao Estrutura.
+- **`aggregate.html.modalSkeleton`** — `{ component, skeleton }`: se a jornada tem
+  arquetipo de modal (`slds-modal`), o extrator emite o skeleton do modal mais completo —
+  **a receita copiavel de modal**, separada do skeleton de grid. Cole-a tambem.
 - **`aggregate.html.rootTags`** — a tag raiz/wrapper de topo mais comum (ex.:
   `lightning-card` em 9/9). O componente novo deve nascer com o mesmo wrapper.
 - **`aggregate.html.allCustomTags`** / **`html.customTags`** — componentes filhos `c-*`
   reutilizados (composicao parent-child real da org).
+- **`aggregate.js.sharedUtils`** — **superficie de API dos utilitarios locais** (`c/xUtil`)
+  importados por 2+ componentes: `{ module, importedBy, components, exports }`. O extrator
+  LE o `.js` do util e lista os `export`s (funcoes com assinatura, consts, classes). Se
+  14/18 importam `c/consorcioUtil`, o componente novo TEM que usa-lo — a Skill 2 precisa
+  saber quais funcoes existem. Registre o modulo + os exports na secao Estrutura/Dados.
 
 ## Prioridade 1 — Naming
 
@@ -134,8 +144,9 @@ Ao escrever (etapa 9), use esta estrutura por jornada:
 
 ### Estrutura & Composicao (a receita)
 <tag raiz/wrapper comum (ex.: lightning-card com title/icon-name); esqueleto
-representativo da composicao — cole 1 exemplo real de `html.skeleton`; componentes
-filhos c-* reutilizados>
+representativo da composicao — cole o `representativeSkeleton`; se ha arquetipo de modal,
+cole tambem o `modalSkeleton`; componentes filhos c-* reutilizados; utilitarios locais
+compartilhados (`sharedUtils`: modulo c/xUtil + os exports que a jornada assume)>
 
 ### Naming
 <estilo dominante + prefixo comum, com exemplo real>

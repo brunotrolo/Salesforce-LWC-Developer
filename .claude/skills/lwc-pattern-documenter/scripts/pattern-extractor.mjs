@@ -348,6 +348,48 @@ function commonPrefix(names) {
 }
 
 // ---------------------------------------------------------------------------
+// Utilitarios locais compartilhados (c/xUtil): quando varios componentes importam
+// o MESMO modulo local `c/algo`, o extrator LE o .js desse modulo e lista os EXPORTS
+// (a superficie de API que a jornada assume como base). E o sinal que mais impacta a
+// GERACAO: se 14/18 componentes importam `c/consorcioUtil`, o componente novo TEM que
+// usa-lo — e a Skill 2 precisa saber quais funcoes existem. Deterministico.
+// ---------------------------------------------------------------------------
+function resolveSharedUtils(valid) {
+  const usage = {}; // mod -> Set(nomes de componentes que importam)
+  for (const c of valid) {
+    for (const imp of c.js?.imports || []) {
+      const m = imp.match(/^c\/(\w+)/);
+      if (m) (usage[m[1]] = usage[m[1]] || new Set()).add(c.name);
+    }
+  }
+  const parents = uniq(valid.map((c) => join(c.path || '.', '..')));
+  const shared = [];
+  for (const [mod, users] of Object.entries(usage)) {
+    if (users.size < 2) continue; // "compartilhado" = usado por 2+
+    let src = '';
+    for (const parent of parents) {
+      const p = join(parent, mod, `${mod}.js`);
+      if (existsSync(p)) { src = readSafe(p); break; }
+    }
+    let exportsList = [];
+    if (src) {
+      const fns = allMatches(/export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)/g, src, 0).map((full) => {
+        const mm = full.match(/function\s+(\w+)\s*\(([^)]*)\)/);
+        return `${mm[1]}(${mm[2].trim()})`;
+      });
+      const consts = allMatches(/export\s+const\s+(\w+)/g, src);
+      const named = allMatches(/export\s*\{\s*([^}]+)\s*\}/g, src).flatMap((grp) =>
+        grp.split(',').map((x) => x.trim().split(/\s+as\s+/)[0]).filter(Boolean)
+      );
+      const classes = allMatches(/export\s+(?:default\s+)?class\s+(\w+)/g, src).map((n) => `class ${n}`);
+      exportsList = uniq([...fns, ...consts, ...named, ...classes]);
+    }
+    shared.push({ module: `c/${mod}`, importedBy: users.size, components: [...users].sort(), exports: exportsList });
+  }
+  return shared.sort((a, b) => b.importedBy - a.importedBy);
+}
+
+// ---------------------------------------------------------------------------
 // AGREGACAO + deteccao de divergencia entre componentes da jornada
 // ---------------------------------------------------------------------------
 function aggregate(components) {
@@ -437,6 +479,8 @@ function aggregate(components) {
       // (#5) Custom Labels / i18n
       labelUsers: valid.filter((c) => (c.js?.labels || []).length).length,
       allLabels: uniq(valid.flatMap((c) => c.js?.labels || [])),
+      // Utilitarios locais compartilhados (c/xUtil) + superficie de API (exports)
+      sharedUtils: resolveSharedUtils(valid),
     },
     html: {
       componentsWithSlots: withSlots.length,
@@ -447,6 +491,11 @@ function aggregate(components) {
       commonSldsClasses: freqTable(valid.flatMap((c) => uniq(c.html?.sldsClasses || [])), 2),
       // (#1) Tag raiz mais comum (wrapper de topo) — parte da receita de composicao
       rootTags: tally(valid.map((c) => c.html?.rootTag).filter(Boolean)),
+      // (#1) Esqueleto REPRESENTATIVO (o componente com mais estrutura) e, se a jornada
+      // tem arquetipo de modal, o esqueleto de MODAL mais completo — ja escolhidos,
+      // prontos para colar na secao Estrutura. Sao a "receita" copiavel para gerar.
+      representativeSkeleton: pickSkeleton(valid),
+      modalSkeleton: pickSkeleton(valid, (c) => (c.html?.sldsClasses || []).some((x) => /^slds-modal/.test(x))),
       spinnerUsers: valid.filter((c) => (c.html?.lightningTags || []).includes('lightning-spinner')).length,
       a11yAvg:
         valid.length ? Math.round((valid.reduce((s, c) => s + (c.html?.a11yScore || 0), 0) / valid.length) * 10) / 10 : 0,
@@ -536,6 +585,16 @@ function computeSpecifics(valid) {
       return { component: c.name, unique };
     })
     .filter((x) => Object.keys(x.unique).length);
+}
+
+// Escolhe o esqueleto mais completo (mais linhas) entre os componentes que passam no
+// filtro opcional. Retorna { component, skeleton } ou null. Usado para o esqueleto
+// representativo da jornada e para o esqueleto de modal (filtro slds-modal).
+function pickSkeleton(valid, filter = null) {
+  const cands = valid
+    .filter((c) => (c.html?.skeleton || []).length && (!filter || filter(c)))
+    .sort((a, b) => (b.html.skeleton.length - a.html.skeleton.length));
+  return cands.length ? { component: cands[0].name, skeleton: cands[0].html.skeleton } : null;
 }
 
 function tally(arr) {

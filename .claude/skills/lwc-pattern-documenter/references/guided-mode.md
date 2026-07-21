@@ -55,12 +55,21 @@ Mostre o Markdown EXATO da secao que vai escrever, ANTES de salvar:
 *"Esta e a secao que vou gravar em .lwc-pattern-documenter/lwc-design-system/design-patterns.md. Confere?"* So prossiga com
 o "ok" explicito. Se o usuario ajustar algo, edite e mostre de novo.
 
-## Etapa 9 — Escrever/atualizar
-- **Jornada nova** → anexe a secao ao fim de `.lwc-pattern-documenter/lwc-design-system/design-patterns.md`; adicione a
-  entrada ao `.lwc-pattern-documenter/lwc-design-system/journeys-index.json`.
-- **Atualizacao** → substitua APENAS a secao daquela jornada (nunca duplique, nunca
-  crie `-v2`); atualize `lastScan`/`components` no indice.
-Feche com o resumo curto (etapa de encerramento do SKILL.md).
+## Etapa 9 — Escrever/atualizar (DETERMINISTICO — nunca a mao)
+⚠️ **NUNCA reescreva os arquivos de saida manualmente** — isso ja apagou uma jornada ja
+gravada (bug real). Use SEMPRE o `pattern-writer.mjs`, que faz o merge por voce:
+```bash
+# salve a secao aprovada na etapa 8 em section.md, depois:
+node .claude/skills/lwc-pattern-documenter/scripts/pattern-writer.mjs \
+  --journey "Nome da Jornada" --components compA,compB,compC --section section.md
+```
+- **Jornada nova** → o writer **anexa** a secao; toda jornada existente permanece intacta.
+- **Atualizacao** → substitui APENAS a secao `## Padrao: <Nome>` daquela jornada (nunca
+  duplica, nunca cria `-v2`); faz upsert de `lastScan`/`components` no indice.
+- **Trava de integridade:** o writer **aborta** se o merge fosse perder qualquer jornada.
+
+Confirme ao usuario quantas jornadas o documento tem agora (deve ser ≥ antes). Feche com
+o resumo curto (etapa de encerramento do SKILL.md).
 
 ---
 
