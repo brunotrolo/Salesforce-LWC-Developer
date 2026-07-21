@@ -5,7 +5,7 @@ description: >-
   JORNADA/PRODUTO, num Markdown vivo e incremental. Dado um conjunto de LWCs que o
   usuario aponta (caminho manual OU menu interativo) + um nome de jornada/produto,
   extrai padroes (naming, CSS/tokens, slots, eventos, imports, acessibilidade,
-  composicao) e ESCREVE/ATUALIZA uma secao em docs/lwc-design-system/design-patterns.md — nunca gera
+  composicao) e ESCREVE/ATUALIZA uma secao em .lwc-pattern-documenter/lwc-design-system/design-patterns.md — nunca gera
   nem edita componentes, so LE e DOCUMENTA. Tem um GUIA INICIAL obrigatorio (nunca
   "recebe input e sai processando"): confirma jornada, exige minimo de 3 componentes,
   documenta divergencia em vez de decidir sozinha, evita jornada duplicada. TRIGGER
@@ -20,7 +20,7 @@ description: >-
 
 Objetivo: dado um conjunto de LWCs que o usuario aponta como representativos de uma
 **jornada/produto** (ex.: "Atendimento ao Cliente", "Vendas B2B"), extrair os padroes
-de design e **escrever/atualizar uma secao** em `docs/lwc-design-system/design-patterns.md`. O documento
+de design e **escrever/atualizar uma secao** em `.lwc-pattern-documenter/lwc-design-system/design-patterns.md`. O documento
 cresce **incrementalmente** — uma jornada por vez — e vira a referencia canonica que a
 futura `lwc-pattern-generator` (Skill 2) usara para gerar novos componentes alinhados.
 
@@ -30,8 +30,8 @@ padroes — antes de arriscar o "corpo" — geracao de codigo). Veja `docs/ARCHI
 
 ## 🚫 NUNCA FACA (proibicoes absolutas)
 
-Esta skill escreve APENAS dois arquivos: `docs/lwc-design-system/design-patterns.md` e
-`docs/lwc-design-system/journeys-index.json`. Voce **NUNCA**:
+Esta skill escreve APENAS dois arquivos: `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` e
+`.lwc-pattern-documenter/lwc-design-system/journeys-index.json`. Voce **NUNCA**:
 
 1. **Escreve, edita, cria, move, apaga ou deploya** qualquer arquivo de componente LWC
    (`.js`/`.html`/`.css`/`.js-meta.xml`) — a leitura desses arquivos e **somente
@@ -61,7 +61,7 @@ inicial obrigatorio — cada uma exige uma checagem ANTES de escrever:
    variantes** na secao e marque como "convencao inconsistente nesta jornada". Nunca
    escolha a maioria automaticamente.
 4. **Lista canonica de jornadas.** Antes de criar uma secao nova, cheque o
-   `docs/lwc-design-system/journeys-index.json`: se o nome novo se parece com um ja existente
+   `.lwc-pattern-documenter/lwc-design-system/journeys-index.json`: se o nome novo se parece com um ja existente
    ("Atendimento" vs "Atendimento ao Cliente"), **avise e confirme** antes de criar —
    evita fragmentar o documento por variacao de digitacao.
 
@@ -103,7 +103,7 @@ e `warnings`. O que cada sinal significa e a ordem de prioridade estao em
 Nunca pule para a escrita. Toda execucao passa por estas etapas — detalhe e mensagens
 em `references/guided-mode.md`:
 
-1. **Mostrar o estado atual** — leia `docs/lwc-design-system/journeys-index.json` e liste as jornadas ja
+1. **Mostrar o estado atual** — leia `.lwc-pattern-documenter/lwc-design-system/journeys-index.json` e liste as jornadas ja
    documentadas (se houver).
 2. **Jornada nova ou atualizacao?** — receba o nome; se parecer com uma ja indexada,
    avise e confirme (regra 4).
@@ -125,22 +125,30 @@ em `references/guided-mode.md`:
    variantes e marque "inconsistente"; nunca decida (regra 3).
 8. **Preview + aprovacao** — mostre ao usuario o Markdown EXATO que vai escrever na
    secao, ANTES de salvar. So prossiga com o "ok" explicito.
-9. **Escrever/atualizar** — grave a secao em `docs/lwc-design-system/design-patterns.md` (nova → anexa;
+9. **Escrever/atualizar** — grave a secao em `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` (nova → anexa;
    existente → atualiza a secao daquela jornada, nunca duplica) e atualize o
-   `docs/lwc-design-system/journeys-index.json` (nome novo → adiciona; atualizacao → so a data do scan).
+   `.lwc-pattern-documenter/lwc-design-system/journeys-index.json` (nome novo → adiciona; atualizacao → so a data do scan).
 
-## Formato do documento
+## Formato e local do documento
 
-- `docs/lwc-design-system/design-patterns.md` — uma secao `## Padrao: <Jornada>` por jornada/produto, com
+> **Onde fica (padrao do apex-test-loop):** a saida vai numa pasta **oculta e propria
+> da ferramenta, na RAIZ do projeto** — `.lwc-pattern-documenter/lwc-design-system/` —
+> **nunca em `docs/`**. Isso espelha a `apex-test-loop`, que grava seu estado em
+> `.apex-test-loop/state/`: uma pasta com o nome da skill, fora de `docs/` e fora de
+> `.claude/`, para (a) nao poluir a `docs/` do projeto do usuario, (b) deixar claro de
+> quem e o diretorio, e (c) nao colidir com nada. A pasta e criada em tempo de execucao
+> no projeto do usuario.
+
+- `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` — uma secao `## Padrao: <Jornada>` por jornada/produto, com
   componentes-fonte, data do scan, e as convencoes (naming, CSS/tokens, slots, eventos,
   composicao, a11y). **Elementos especificos de um componente** ficam numa subsecao
   "Elementos especificos por componente" (atrelados ao arquivo); **divergencias** numa
   subsecao "⚠️ Convencoes inconsistentes". Template completo em
   `references/extraction-signals.md`.
-- `docs/lwc-design-system/journeys-index.json` — lista canonica: `[{ "journey", "components", "lastScan" }]`.
+- `.lwc-pattern-documenter/lwc-design-system/journeys-index.json` — lista canonica: `[{ "journey", "components", "lastScan" }]`.
   Fonte de verdade da regra 4 (evitar duplicata) e do "estado atual" da etapa 1.
 
-**Se os arquivos ou a pasta `docs/lwc-design-system/` nao existirem, CRIE-OS** (a partir
+**Se os arquivos ou a pasta `.lwc-pattern-documenter/lwc-design-system/` nao existirem, CRIE-OS** (a partir
 do template). A skill e dona exclusiva desse diretorio — nunca escreve fora dele.
 
 ## 🤝 Coexistencia com outras skills (em especial `apex-test-loop`)
@@ -154,7 +162,7 @@ skills oficiais que ela importa) **sem sobrescrever nada**. Garantias:
    pronto. **NUNCA** substitua, mescle por cima, ou apague o `.claude/settings.json`
    existente — ele pertence a `apex-test-loop` (guard, `permissions.deny`,
    `bypassPermissions`) e sobrescreve-lo destruiria a seguranca daquela skill.
-2. **Escreve so em `docs/lwc-design-system/`.** Nao toca em `.apex-test-loop/state/`
+2. **Escreve so em `.lwc-pattern-documenter/lwc-design-system/`.** Nao toca em `.apex-test-loop/state/`
    (estado da apex-test-loop), no `RECOMMENDATIONS.md` de outra skill, nem em nenhum
    arquivo `.cls`/`.trigger`/`force-app/classes` — dominios da apex-test-loop.
 3. **Convive com o guard da apex-test-loop, se presente.** O hook `guard.mjs` daquela
@@ -167,7 +175,7 @@ skills oficiais que ela importa) **sem sobrescrever nada**. Garantias:
    Elas nao se ativam uma pela outra.
 
 Resumo: instalar esta skill ao lado da `apex-test-loop` e seguro e reversivel — some a
-pasta da skill e a pasta `docs/lwc-design-system/`, nada mais e afetado.
+pasta da skill e a pasta `.lwc-pattern-documenter/lwc-design-system/`, nada mais e afetado.
 
 ## Encerramento
 

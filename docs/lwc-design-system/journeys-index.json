@@ -1,4 +1,0 @@
-{
-  "_comment": "Lista canonica de jornadas/produtos ja documentados em design-patterns.md. Mantido pela skill lwc-pattern-documenter (regra 4: evitar duplicata por variacao de nome). Cada entrada: { journey, components: [nomes], lastScan: AAAA-MM-DD }.",
-  "journeys": []
-}

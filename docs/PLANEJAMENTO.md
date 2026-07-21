@@ -275,7 +275,7 @@ Isso muda 3 coisas na arquitetura original:
 - Seção 1 (Visão Geral do Fluxo) reorganizada em torno das 2 skills.
 - Seção 2 (Ownership & Delegation) dividida entre as duas skills.
 - Seção 4 (Sistema de Aprendizado de Padrões) reescrita: de `patterns.json` global
-  para `docs/lwc-design-system/design-patterns.md` com 1 seção por jornada/produto, incremental
+  para `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` com 1 seção por jornada/produto, incremental
   (acrescenta jornada nova, atualiza jornada existente, nunca sobrescreve as outras).
 - Seção 6 (Estrutura de Repositório) e seção 8 (Ordem de Implementação) atualizadas
   para refletir 2 pastas de skill e um Tier 0 dedicado ao MVP da Skill 1.
@@ -387,7 +387,7 @@ qualquer código da skill ser escrito. Estado da validação item a item:
 3. ✅ **Decidido:** a Skill 2 importa `experience-lwc-generate` +
    `design-systems-slds-apply` do `sf-skills` para o craft de LWC — confirmado que
    nenhuma skill oficial cobre o pattern-learning da `lwc-pattern-documenter`.
-4. Confirmar formato exato do `docs/lwc-design-system/design-patterns.md` e do `journeys-index.json` —
+4. Confirmar formato exato do `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` e do `journeys-index.json` —
    os templates propostos servem, ou precisam de ajustes?
 5. Confirmar quais sinais entram no `extraction-signals.md` e em que ordem de
    prioridade, usando a primeira jornada real do usuário como teste (Tier 1).

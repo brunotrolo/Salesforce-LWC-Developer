@@ -91,7 +91,7 @@ ou naturalmente:
 > "documente os padrões de LWC da jornada Faturas"
 > "aprenda o design system desses componentes de Atendimento"
 
-A skill conduz um **roteiro de perguntas** (nunca "recebe e sai processando"): pergunta a jornada, quais arquivos analisar, extrai os sinais, mostra um **preview** e só então grava a seção em `docs/lwc-design-system/design-patterns.md`.
+A skill conduz um **roteiro de perguntas** (nunca "recebe e sai processando"): pergunta a jornada, quais arquivos analisar, extrai os sinais, mostra um **preview** e só então grava a seção em `.lwc-pattern-documenter/lwc-design-system/design-patterns.md`.
 
 ---
 

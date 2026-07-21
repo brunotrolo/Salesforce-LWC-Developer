@@ -48,7 +48,7 @@ PROCESSO:
   4. Se a jornada já existe no documento → ATUALIZA a seção (nunca duplica)
   5. Se é uma jornada nova → ACRESCENTA nova seção (nunca sobrescreve as outras)
   ↓
-OUTPUT: docs/lwc-design-system/design-patterns.md (ou um arquivo por jornada — ver seção 4)
+OUTPUT: .lwc-pattern-documenter/lwc-design-system/design-patterns.md (ou um arquivo por jornada — ver seção 4)
 ```
 
 ### Skill 2 — `lwc-pattern-generator` (a implementar DEPOIS, quando a Skill 1 estiver validada)
@@ -187,7 +187,7 @@ jornada/produto. A skill extrai: naming conventions, uso de slots, arquitetura C
 (parent-child), acessibilidade (ARIA, foco), performance (`@wire`, lazy load) — **só
 dos arquivos apontados**, não da org inteira.
 
-**Armazenamento:** `docs/lwc-design-system/design-patterns.md` — um único documento Markdown,
+**Armazenamento:** `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` — um único documento Markdown,
 versionado em git, legível por humano, organizado em **uma seção por
 jornada/produto** (`## Padrão: <Nome da Jornada>`). Cada seção documenta:
 
@@ -345,14 +345,18 @@ Salesforce-LWC-Developer/
 │       ├── VENDOR-ATTRIBUTION.md               # Atribuicao Apache-2.0 das 2 skills acima (padrao apex-test-loop)
 │       ├── VENDOR-sf-skills-LICENSE-Apache-2.0.txt  # Texto da licenca Apache-2.0 do upstream
 │       └── README.md                           # Indice das skills deste repo
-├── docs/
-│   └── lwc-design-system/                       # Namespace dedicado da Skill 1 (nao colide c/ apex-test-loop)
+├── .lwc-pattern-documenter/                     # SAIDA runtime da Skill 1 (criada no projeto, como .apex-test-loop/)
+│   └── lwc-design-system/
 │       ├── design-patterns.md                   # Documento vivo — 1 secao por jornada/produto
-│       └── journeys-index.json                  # Lista canonica de jornadas/produtos ja documentadas
-├── .apex-lwc-developer/state/<Componente>.md   # checkpoint por componente (caminho neutro) — Skill 2
-├── force-app/main/default/lwc/                 # LWCs gerados (Skill 2)
+│       └── journeys-index.json                  # Lista canonica de jornadas/produtos ja documentados
+├── force-app/main/default/lwc/                 # LWCs da org (Skill 1 le; Skill 2 gera)
 └── LICENSE                                     # MIT
 ```
+
+> **Nota:** a pasta `.lwc-pattern-documenter/` é criada **no projeto do usuário** em
+> tempo de execução (não é versionada aqui, neste repo da skill) — exatamente como a
+> `apex-test-loop` cria `.apex-test-loop/state/` no projeto, não no repo dela. É uma
+> pasta **oculta, própria da ferramenta**, na raiz do projeto — nunca em `docs/`.
 
 ### Coexistência com a `apex-test-loop` (mesmo projeto Salesforce)
 
@@ -364,7 +368,7 @@ uma nunca sobrescreve a outra:
   instalação puramente aditiva. Quando a **Skill 2** for construída e precisar do seu
   próprio guard, o correto é **MESCLAR** no `settings.json` existente (adicionar as
   regras/hook), **nunca substituir o arquivo** — senão o guard da apex-test-loop morre.
-- **Caminhos de saída isolados:** a Skill 1 escreve só em `docs/lwc-design-system/`; a
+- **Caminhos de saída isolados:** a Skill 1 escreve só em `.lwc-pattern-documenter/lwc-design-system/`; a
   apex-test-loop usa `.apex-test-loop/state/`. Sem interseção.
 - **O guard da apex-test-loop, se presente, libera** as escritas `.md`/`.json` e a
   leitura de LWC desta skill (ele só mira `.cls`/`.trigger`/`force-app/classes`) —
@@ -423,7 +427,7 @@ Detalhamento completo desse fluxo (mensagens exatas, formato das perguntas) fica
 
 - **Tier 0 (MVP — Skill 1, `lwc-pattern-documenter`):** `SKILL.md` +
   `pattern-extractor.mjs` + `extraction-signals.md` + `guided-mode.md` +
-  `docs/lwc-design-system/design-patterns.md` + `docs/lwc-design-system/journeys-index.json` (arquivos iniciais
+  `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` + `.lwc-pattern-documenter/lwc-design-system/journeys-index.json` (arquivos iniciais
   vazios/template). Sem segurança de escrita de componente (não aplicável — a skill
   só lê arquivos e escreve Markdown/JSON de índice).
 - **Tier 1 (validação do MVP):** usar a Skill 1 em 2-3 jornadas reais da org do
@@ -521,7 +525,7 @@ Este documento é o ponto de partida para discussão. Estado da validação item
    delegar o craft de LWC — confirmado por pesquisa que nenhuma skill oficial cobre
    o pattern-learning específico da org (seção 2 e 10). A Skill 1 não delega craft
    (só lê e documenta).
-5. Confirmar formato exato do `docs/lwc-design-system/design-patterns.md` (seção 4, "Exemplo de
+5. Confirmar formato exato do `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` (seção 4, "Exemplo de
    estrutura") e do `journeys-index.json` (seção 6) — os templates propostos servem,
    ou precisam de mais/menos campos?
 6. Confirmar quais sinais de extração entram no `extraction-signals.md` e em que

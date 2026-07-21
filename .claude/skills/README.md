@@ -28,5 +28,5 @@ Arquitetura completa das duas skills e as decisões de design: [`../../docs/ARCH
 Estas skills foram desenhadas para conviver no MESMO projeto Salesforce que a
 [`apex-test-loop`](https://github.com/brunotrolo/Salesforce-LoopAgentApex) **sem
 sobrescrever nada**: a `lwc-pattern-documenter` **não traz `.claude/settings.json`**
-(instalação puramente aditiva) e escreve apenas em `docs/lwc-design-system/`. Detalhes
+(instalação puramente aditiva) e escreve apenas em `.lwc-pattern-documenter/lwc-design-system/`. Detalhes
 na seção "🤝 Coexistência" do `lwc-pattern-documenter/SKILL.md`.
