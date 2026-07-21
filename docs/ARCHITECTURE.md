@@ -340,9 +340,11 @@ Salesforce-LWC-Developer/
 │       │   │   └── conflict-resolution.md
 │       │   └── tests/                          # guard.test.mjs, pattern-scorer.test.mjs
 │       │
-│       ├── experience-lwc-generate/            # IMPORTADA na integra (sf-skills, Apache-2.0) — Tier 2
-│       ├── design-systems-slds-apply/          # IMPORTADA na integra (sf-skills, Apache-2.0) — Tier 2
-│       └── VENDOR-ATTRIBUTION.md               # Atribuicao Apache-2.0 das 2 skills acima (padrao apex-test-loop)
+│       ├── experience-lwc-generate/            # IMPORTADA na integra (sf-skills v1.31.0, Apache-2.0) ✅
+│       ├── design-systems-slds-apply/          # IMPORTADA na integra (sf-skills v1.31.0, Apache-2.0) ✅
+│       ├── VENDOR-ATTRIBUTION.md               # Atribuicao Apache-2.0 das 2 skills acima (padrao apex-test-loop)
+│       ├── VENDOR-sf-skills-LICENSE-Apache-2.0.txt  # Texto da licenca Apache-2.0 do upstream
+│       └── README.md                           # Indice das skills deste repo
 ├── docs/
 │   └── lwc-design-system/                       # Namespace dedicado da Skill 1 (nao colide c/ apex-test-loop)
 │       ├── design-patterns.md                   # Documento vivo — 1 secao por jornada/produto
