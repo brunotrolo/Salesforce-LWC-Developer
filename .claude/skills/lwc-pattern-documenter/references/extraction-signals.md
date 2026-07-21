@@ -1,7 +1,7 @@
 # Sinais de extracao — o que documentar, em que prioridade
 
 Referencia do que o `pattern-extractor.mjs` extrai e como o agente deve traduzir isso
-em convencoes legiveis na secao do `docs/design-patterns.md`. A ordem abaixo e a
+em convencoes legiveis na secao do `docs/lwc-design-system/design-patterns.md`. A ordem abaixo e a
 **prioridade** — os primeiros sinais sao os que mais definem "o jeito da org" e os que
 a futura `lwc-pattern-generator` mais vai consultar ao gerar.
 
@@ -64,7 +64,7 @@ a futura `lwc-pattern-generator` mais vai consultar ao gerar.
 
 ---
 
-## Template da secao no `docs/design-patterns.md`
+## Template da secao no `docs/lwc-design-system/design-patterns.md`
 
 Ao escrever (etapa 9), use esta estrutura por jornada:
 

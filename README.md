@@ -16,7 +16,7 @@ aprendidos.
 **Skill 1 — `lwc-pattern-documenter` (implementada):** você aponta um conjunto de LWCs
 que representam uma jornada/produto (ex.: "Atendimento ao Cliente") + o nome dela, e a
 skill extrai as convenções (naming, CSS/tokens, slots, eventos, imports, acessibilidade)
-e **escreve/atualiza uma seção** em [`docs/design-patterns.md`](docs/design-patterns.md).
+e **escreve/atualiza uma seção** em [`docs/lwc-design-system/design-patterns.md`](docs/lwc-design-system/design-patterns.md).
 O documento cresce incrementalmente, uma jornada por vez. Ela **só lê e documenta** —
 nunca gera nem edita componentes.
 

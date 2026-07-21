@@ -6,7 +6,7 @@ sinalizar divergencia, evitar duplicata) que exigem checkpoint humano. Conduza u
 etapa por vez, em portugues simples.
 
 ## Etapa 1 — Mostrar o estado atual
-Leia `docs/journeys-index.json`. Se ja houver jornadas documentadas, liste-as
+Leia `docs/lwc-design-system/journeys-index.json`. Se ja houver jornadas documentadas, liste-as
 ("Ja temos documentadas: Atendimento ao Cliente (5 comps, scan 2026-07-10), Vendas B2B
 (3 comps)..."). Se vazio, diga que este sera o primeiro padrao documentado.
 
@@ -52,12 +52,12 @@ oficial."*
 
 ## Etapa 8 — Preview + aprovacao (obrigatorio)
 Mostre o Markdown EXATO da secao que vai escrever, ANTES de salvar:
-*"Esta e a secao que vou gravar em docs/design-patterns.md. Confere?"* So prossiga com
+*"Esta e a secao que vou gravar em docs/lwc-design-system/design-patterns.md. Confere?"* So prossiga com
 o "ok" explicito. Se o usuario ajustar algo, edite e mostre de novo.
 
 ## Etapa 9 — Escrever/atualizar
-- **Jornada nova** → anexe a secao ao fim de `docs/design-patterns.md`; adicione a
-  entrada ao `docs/journeys-index.json`.
+- **Jornada nova** → anexe a secao ao fim de `docs/lwc-design-system/design-patterns.md`; adicione a
+  entrada ao `docs/lwc-design-system/journeys-index.json`.
 - **Atualizacao** → substitua APENAS a secao daquela jornada (nunca duplique, nunca
   crie `-v2`); atualize `lastScan`/`components` no indice.
 Feche com o resumo curto (etapa de encerramento do SKILL.md).
