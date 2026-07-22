@@ -182,7 +182,9 @@ mensagens em `references/guided-mode.md`:
 
 Resumo curto: qual modo foi usado, qual jornada de referencia, o componente
 resultante, os dois scores (aderencia + craft/SLDS), e se houve deploy. Se apareceu
-uma licao reutilizavel, anote em `RECOMMENDATIONS.md`.
+uma licao reutilizavel sobre a propria skill, anote em `RECOMMENDATIONS.md`. Se
+apareceu um fato **operacional** deste projeto/org (nao uma licao da skill), anote em
+`.claude/agent-memory-local/lwc-pattern-generator/MEMORY.md` (ver etapa 9 do guia).
 
 ## Referencias
 
@@ -197,4 +199,6 @@ uma licao reutilizavel, anote em `RECOMMENDATIONS.md`.
   de especifico do componente-fonte (adaptar) no modo Clonar.
 - `references/edit-mode-guide.md` — a tecnica de diff estrutural e deteccao de
   regressao de convencao no modo Editar.
+- `.claude/agent-memory-local/README.md` — memoria local operacional (nao versionada),
+  distinta de `RECOMMENDATIONS.md` e `design-patterns.md`.
 - `docs/ARCHITECTURE.md` (raiz do repo) — a arquitetura completa das 2 skills.

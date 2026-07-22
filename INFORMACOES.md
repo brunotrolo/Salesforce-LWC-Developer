@@ -237,6 +237,27 @@ Detalhamento e o passo a passo completo no contexto do modo Editar:
 
 ---
 
+## Memória local por skill (`agent-memory-local/`)
+
+Além do `design-patterns.md` (convenção de design, curada) e do `RECOMMENDATIONS.md`
+(melhoria da própria skill, revisada por você), existe um terceiro tipo de conhecimento
+que nenhum dos dois cobre: **fatos operacionais deste projeto/org específico** — alias de
+org, particularidades de deploy, um falso-positivo do `guard.mjs` já visto, se o Local
+Dev funciona nesta org. Sem registrar isso em algum lugar, o agente redescobre do zero
+toda sessão.
+
+Cada skill mantém o seu próprio arquivo em
+`.claude/agent-memory-local/<skill>/MEMORY.md` — **local ao projeto, nunca versionado**
+(a pasta tem seu próprio `.gitignore`, então nada aqui é commitado nem cruza para outro
+projeto). Diferente do `RECOMMENDATIONS.md`, que exige revisão humana antes de qualquer
+mudança, a skill pode anexar uma nota diretamente aqui — sempre avisando você numa linha
+("Anotei na memória local: ..."), nunca em silêncio, e nunca duplicando o que já pertence
+ao `design-patterns.md` ou ao `RECOMMENDATIONS.md`.
+
+Detalhes completos (formato, regras, exemplos): `.claude/agent-memory-local/README.md`.
+
+---
+
 ## Coexistência com a `apex-test-loop`
 
 As duas skills deste repo foram desenhadas para conviver, no **mesmo projeto

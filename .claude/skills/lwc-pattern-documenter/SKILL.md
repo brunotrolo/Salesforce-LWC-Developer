@@ -247,11 +247,18 @@ pasta da skill e a pasta `.lwc-pattern-documenter/lwc-design-system/`, nada mais
 Resumo curto: qual jornada foi documentada/atualizada, quantos componentes, e se houve
 divergencias registradas. Se apareceu uma licao reutilizavel sobre a propria skill,
 anote em `RECOMMENDATIONS.md` (quando existir) — mesmo modelo de ledger do apex-test-loop.
+Se apareceu um fato **operacional** deste projeto/org (ex.: um padrao de pasta fora do
+comum, uma particularidade de nomenclatura da org) — nao convencao de design, que vai em
+`design-patterns.md` — anote em
+`.claude/agent-memory-local/lwc-pattern-documenter/MEMORY.md` (crie se nao existir; ver
+`.claude/agent-memory-local/README.md` para o formato) e avise o usuario numa linha.
 
 ## Referencias
 
 - `references/extraction-signals.md` — o que cada sinal significa, ordem de prioridade,
   e o template da secao do documento.
 - `references/guided-mode.md` — o roteiro detalhado das 9 etapas (mensagens em PT).
+- `.claude/agent-memory-local/README.md` — memoria local operacional (nao versionada),
+  distinta de `RECOMMENDATIONS.md` e `design-patterns.md`.
 - `docs/ARCHITECTURE.md` (raiz do repo) — a arquitetura completa das 2 skills e as
   decisoes de design por tras destas regras.

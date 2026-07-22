@@ -16,6 +16,9 @@ Esta pasta carrega automaticamente as skills deste projeto a partir de
   como o *craft* de LWC. Atribuição em [`skills/VENDOR-ATTRIBUTION.md`](skills/VENDOR-ATTRIBUTION.md).
 - Índice das skills: [`skills/README.md`](skills/README.md).
 - `settings.json` — segurança da Skill 2 (ver abaixo).
+- [`agent-memory-local/`](agent-memory-local/) — memória local por skill (fatos
+  operacionais do projeto/org), nunca versionada. Detalhes em
+  [`agent-memory-local/README.md`](agent-memory-local/README.md).
 
 ## `settings.json` — só a Skill 2 precisa dele
 

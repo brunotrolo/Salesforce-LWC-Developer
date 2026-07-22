@@ -18,6 +18,15 @@ design pattern confirmada — isso e o proprio motivo dela existir. Rode a
 `lwc-pattern-documenter` (Skill 1) primeiro para documentar a jornada que voce quer usar
 como base."*
 
+## Memoria local (se existir) — leia antes de comecar
+
+Antes da etapa 0, se `.claude/agent-memory-local/lwc-pattern-generator/MEMORY.md`
+existir, leia-o. E conhecimento **operacional** deste projeto especifico (alias de org,
+particularidades de deploy, falso-positivo do guard ja visto, se o Local Dev funciona
+nesta org...) — nao e convencao de design (isso fica em `design-patterns.md`, territorio
+da Skill 1). Ajuda a nao repetir tropecos ja resolvidos numa sessao anterior. Formato e
+regras de quando anexar em `.claude/agent-memory-local/README.md`.
+
 ## Etapa 0 — [SO modo Editar] Lookup reverso componente→jornada
 
 Se o usuario ja disse "editar o componente X", descubra a jornada de referencia ANTES
@@ -137,6 +146,14 @@ o preview (score + diff + craft).
 ## Etapa 9 — Aprendizado
 
 - Se houve friccao relevante sobre a propria skill, anote em `RECOMMENDATIONS.md`.
+- **Se surgiu um fato operacional deste projeto/org** (nao uma melhoria da skill em si)
+  — ex.: alias de org, particularidade de deploy, falso-positivo do guard, se o Local
+  Dev funciona nesta org — anexe uma linha em
+  `.claude/agent-memory-local/lwc-pattern-generator/MEMORY.md` (crie o arquivo com o
+  cabecalho do formato se ainda nao existir) e avise o usuario numa linha ("Anotei na
+  memoria local: ..."). Regras completas em `.claude/agent-memory-local/README.md`. Nao
+  confundir com `RECOMMENDATIONS.md` (melhoria da skill, precisa revisao humana) nem com
+  `design-patterns.md` (convencao de design, territorio exclusivo da Skill 1).
 - **Sugestao de "rode a Skill 1 de novo"**: so se `novelty.novel === true` no resultado
   do `pattern-scorer.mjs` (um `@api`/evento/classe SLDS que nao aparece nem nos padroes
   compartilhados nem em `componentSpecifics` de nenhum componente da jornada). Se
