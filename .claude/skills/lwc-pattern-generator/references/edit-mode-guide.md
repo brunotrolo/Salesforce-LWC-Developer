@@ -38,7 +38,34 @@ prosseguir — o rollback via `git checkout -- <arquivo>` so e seguro numa tree 
 Aplique a edicao (ou prepare o conteudo proposto) e mostre o diff real (`git diff` ou
 equivalente) para os arquivos alterados. **So prossiga apos o "ok" explicito.**
 
-## 4. Pontuar so o diff estrutural
+## 4. (Recomendado) Pre-visualizar o resultado antes de aprovar o diff
+
+Ler o diff (passo 3) confirma O QUE mudou no codigo, mas nao mostra o RESULTADO
+renderizado — e isso importa especialmente quando a edicao depende de regra de negocio
+(dado de `@wire`/Apex, condicao que so aparece com um registro real) que nao da para
+conferir só lendo o codigo. Antes de aprovar o diff ou rodar o score, ofereca ao usuario
+pre-visualizar com o **Local Dev Server** do Salesforce CLI (plugin
+`@salesforce/plugin-lightning-dev`) — preview local, sem esperar o deploy final (passo 9):
+
+- **`sf lightning dev app -o <org>`** — abre uma pagina/app real da org via proxy local,
+  com hot-reload das edicoes locais (nao precisa reimplantar a cada mudanca). Funciona
+  com `@wire`/Apex/dados reais, mas exige que o componente ja esteja numa pagina/app
+  existente na org (a real, ou uma App Page descartavel numa scratch/dev org). **Use
+  esta opcao quando a edicao depender de regra de negocio** — o caso mais comum no
+  modo Editar.
+- **`sf lightning dev component --name <nome> -o <org>`** — preview isolado, sem
+  precisar de pagina. Mais rapido para iterar em UI/markup/CSS puros, mas hoje **nao
+  suporta bem `@wire`/Apex/Lightning Data Service** — nao usar quando o resultado
+  depende de dado vindo do Apex.
+
+Requer habilitar Local Dev na org (Setup -> "Local Dev" -> "Enable Local Dev") ou, em
+scratch org, `"enableLightningPreviewPref": true` no `config/project-scratch-def.json`.
+O agente **nao inicia esse servidor sozinho** (roda fora do fluxo de arquivos) — sugira
+o comando e deixe o usuario com o preview aberto numa aba enquanto a edicao acontece: o
+servidor recarrega sozinho a cada arquivo salvo. Detalhes e o comparativo completo em
+`../../../../INFORMACOES.md`, secao "Como pre-visualizar o componente".
+
+## 5. Pontuar so o diff estrutural
 
 ```bash
 node .claude/skills/lwc-pattern-generator/scripts/pattern-scorer.mjs \
@@ -89,7 +116,7 @@ conta — não foram tocadas); ela **removeu** um `@api` que era convenção com
 confirmar); e **introduziu** um `@api` novo desconhecido da jornada (sugerir documentar
 depois, se for virar convenção).
 
-## 5. Nunca "corrigir" convencao antiga fora do escopo pedido
+## 6. Nunca "corrigir" convencao antiga fora do escopo pedido
 
 Se durante a edicao voce notar que o componente JA divergia do padrao antes (por
 exemplo, usa `.then()` quando a jornada e dominantemente `async/await`, mas isso nao

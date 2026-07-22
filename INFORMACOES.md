@@ -194,6 +194,49 @@ Guias completos: `.claude/skills/lwc-pattern-generator/references/guided-mode.md
 
 ---
 
+## Como pré-visualizar o componente antes de aprovar (Local Dev Server)
+
+A skill (e o agente que a executa) **não renderiza um preview visual na conversa** — o
+que ela mostra é texto: o preview do que vai reaproveitar/adaptar (Criar/Clonar) ou o
+**diff proposto** (Editar), sempre com aprovação obrigatória antes de escrever, e de
+novo antes do deploy. Para **ver o componente renderizado de verdade** antes de
+finalizar — importante sobretudo quando o resultado depende de **regra de negócio**
+(dado de `@wire`/Apex, condição que só aparece com um registro real) e não dá para
+conferir só lendo o código — use o **Local Dev Server** oficial do Salesforce CLI em
+paralelo, numa aba própria, enquanto a edição acontece:
+
+**1. Instale/atualize o plugin** (uma vez só):
+```bash
+sf plugins install @salesforce/plugin-lightning-dev
+```
+
+**2. Habilite o Local Dev na org** (uma vez por org): Setup → busque "Local Dev" →
+"Enable Local Dev". Em scratch org, em vez disso adicione no
+`config/project-scratch-def.json`:
+```json
+"settings": { "enableLightningPreviewPref": true }
+```
+
+**3. Escolha o modo de preview conforme a dependência do componente:**
+
+| | `sf lightning dev app -o <org>` | `sf lightning dev component --name <nome> -o <org>` |
+|---|---|---|
+| O que abre | Uma página/app **real da org**, via proxy local | Um harness **isolado**, sem página nenhuma |
+| Precisa estar numa página da org? | Sim (real, ou uma App Page descartável numa scratch/dev org) | Não |
+| `@wire` / Apex / dados reais | ✅ Funciona | ❌ Hoje não é bem suportado |
+| Melhor para | Edição que depende de **regra de negócio** — o caso mais comum no modo Editar | Iteração rápida em UI/markup/CSS puro, ou validar visual no modo Criar antes de plugar dados |
+
+**4. Deixe a aba aberta enquanto o agente edita.** O Local Dev Server observa os
+arquivos em disco e **recarrega sozinho** a cada salvamento (via WebSocket/Hot Module
+Replacement, preservando o estado da página) — não precisa reimplantar nem atualizar a
+mão a cada mudança. Na prática, você acompanha a edição quase em tempo real, sem esperar
+o deploy final (última etapa do guia de cada modo).
+
+Detalhamento e o passo a passo completo no contexto do modo Editar:
+`.claude/skills/lwc-pattern-generator/references/edit-mode-guide.md`.
+
+---
+
 ## Coexistência com a `apex-test-loop`
 
 As duas skills deste repo foram desenhadas para conviver, no **mesmo projeto
