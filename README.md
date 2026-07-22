@@ -8,7 +8,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/brunotrolo/Salesforce-LWC-Developer?style=flat-square&color=00A1E0&label=stars" alt="Stars">
-  <img src="https://img.shields.io/badge/skill%201-documenter%20(Tier%200)-9C6BFF?style=flat-square" alt="Skill 1: documenter">
+  <img src="https://img.shields.io/badge/skill%201-documenter-9C6BFF?style=flat-square" alt="Skill 1: documenter">
+  <img src="https://img.shields.io/badge/skill%202-generator%20(3%20modos)-9C6BFF?style=flat-square" alt="Skill 2: generator">
   <img src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20OpenCode-032D60?style=flat-square" alt="Works with Claude Code and OpenCode">
   <img src="https://img.shields.io/badge/craft-Salesforce%20sf--skills-00A1E0?style=flat-square" alt="Salesforce sf-skills">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
@@ -30,7 +31,7 @@ você aponta os LWCs de uma jornada  →  extrai os sinais  →  você revisa o 
 
 **Como funciona (duas skills):**
 - **Skill 1 — `lwc-pattern-documenter`** ✅ *(esta, implementada):* aprende e **documenta** os padrões por jornada num Markdown vivo. **Só lê e documenta** — nunca gera nem edita componentes.
-- **Skill 2 — `lwc-pattern-generator`** ⏳ *(a construir):* **gera/edita** LWCs respeitando a jornada de referência, **delegando o craft** às skills oficiais da Salesforce (`experience-lwc-generate` + `design-systems-slds-apply`, já importadas neste repo) e injetando por cima os padrões da sua org.
+- **Skill 2 — `lwc-pattern-generator`** ✅ *(implementada):* **cria, clona/adapta ou edita** LWCs (3 modos de operação) respeitando a jornada de referência, **delegando o craft** às skills oficiais da Salesforce (`experience-lwc-generate` + `design-systems-slds-apply`, já importadas neste repo) e pontuando aderência ao padrão da sua org, aprendido pela Skill 1.
 
 > Mesmo princípio do [`Salesforce Apex Cover Loop`](https://github.com/brunotrolo/Salesforce-Apex-Cover-Loop): **orquestração nossa + craft oficial da Salesforce**.
 
@@ -44,7 +45,7 @@ você aponta os LWCs de uma jornada  →  extrai os sinais  →  você revisa o 
 - **Projeto SFDX** com componentes em `force-app/*/lwc/` (os LWCs que a skill vai analisar).
 - **[Claude Code](https://docs.claude.com/en/docs/claude-code)** ou **[OpenCode](https://opencode.ai)**.
 
-> **Skill 1 roda 100% local** — ela só **lê** os arquivos de LWC e escreve Markdown. **Não** precisa de Salesforce CLI (`sf`), nem de conexão com a org, nem de deploy. (A Skill 2, quando existir, aí sim usará `sf` para preview/deploy.)
+> **Skill 1 roda 100% local** — ela só **lê** os arquivos de LWC e escreve Markdown. **Não** precisa de Salesforce CLI (`sf`), nem de conexão com a org, nem de deploy. (A Skill 2 usa `sf`/CLI só na etapa final de deploy, delegada à `platform-metadata-deploy` — a geração/edição em si também é local.)
 
 > **Opcional — rodar de graça com [OpenCode](https://opencode.ai)** (sem key, sem GPU):
 > ```bash

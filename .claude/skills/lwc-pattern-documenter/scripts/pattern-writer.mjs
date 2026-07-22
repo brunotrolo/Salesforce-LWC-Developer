@@ -23,6 +23,13 @@
  * Opcional:
  *   --out-dir <dir>   base (padrao: .lwc-pattern-documenter/lwc-design-system)
  *   --dry-run         imprime o merge no stdout, nao grava nada
+ *   --data <arquivo>  saida COMPLETA do pattern-extractor.mjs (ou so o objeto `aggregate`)
+ *                     para esta jornada. Se fornecida, persiste um snapshot JSON
+ *                     estruturado em journeys/<slug>.json — a fonte determinística que a
+ *                     Skill 2 (lwc-pattern-generator) le de volta, em vez de reparsear a
+ *                     prosa Markdown. Valida que os componentes do arquivo batem com
+ *                     --components (aborta sem gravar nada se nao baterem — o snapshot
+ *                     precisa corresponder exatamente ao que foi documentado).
  */
 
 import fs from 'node:fs';
@@ -33,7 +40,7 @@ const DOC_HEADER = '# Design Patterns LWC — Documentação por Jornada';
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { journey: '', components: [], sectionFile: '', stdin: false, outDir: DEFAULT_OUT_DIR, dryRun: false };
+  const opts = { journey: '', components: [], sectionFile: '', stdin: false, outDir: DEFAULT_OUT_DIR, dryRun: false, dataFile: '' };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case '--journey': opts.journey = args[++i] || ''; break;
@@ -42,6 +49,7 @@ function parseArgs() {
       case '--stdin': opts.stdin = true; break;
       case '--out-dir': opts.outDir = args[++i] || DEFAULT_OUT_DIR; break;
       case '--dry-run': opts.dryRun = true; break;
+      case '--data': opts.dataFile = args[++i] || ''; break;
       default: break;
     }
   }
@@ -56,6 +64,14 @@ function today() {
 // Normaliza um titulo de jornada para comparacao (sem acento, minusculo).
 function normHeading(name) {
   return String(name).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+}
+
+// Slug de arquivo para o snapshot journeys/<slug>.json — reaproveita normHeading (mesma
+// normalizacao usada no merge do Markdown/indice) e so acrescenta a troca de espacos/
+// caracteres especiais por hifen. Garante 1:1 nome<->slug<->json<->secao<->indice.
+function slugFromHeading(name) {
+  const slug = normHeading(name).replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
+  return slug || 'journey';
 }
 
 // Divide o doc num cabecalho + lista ORDENADA de secoes { name, text }.
@@ -110,6 +126,15 @@ function mergeDoc(existingContent, journey, sectionMd) {
   return buildDoc(header, sections);
 }
 
+// Enriquece cada componente (recebido como PATH, ex.: force-app/.../lwc/fooBar) para
+// { name, path } — elimina ambiguidade de nome duplicado entre pastas e e a base do
+// lookup reverso componente->jornada (Skill 2). NAO e breaking: entradas antigas do
+// indice (strings soltas) continuam existindo intactas ate serem re-escritas; quem le
+// o indice deve aceitar os dois formatos (`typeof c === 'string' ? {name: c, path: null} : c`).
+function enrichComponents(rawComponents) {
+  return rawComponents.map((c) => ({ name: path.basename(c), path: c }));
+}
+
 function mergeIndex(existingJson, journey, components) {
   let arr = [];
   if (existingJson && existingJson.trim()) {
@@ -121,14 +146,75 @@ function mergeIndex(existingJson, journey, components) {
   }
   const target = normHeading(journey);
   const idx = arr.findIndex((e) => e && normHeading(e.journey) === target);
-  const entry = { journey, components: components.length ? components : idx >= 0 ? arr[idx].components : [], lastScan: today() };
+  const entry = {
+    journey,
+    components: components.length ? enrichComponents(components) : idx >= 0 ? arr[idx].components : [],
+    lastScan: today(),
+  };
   if (idx >= 0) arr[idx] = entry; else arr.push(entry);
   return arr;
+}
+
+// Le e valida o --data (saida completa do pattern-extractor.mjs, ou so o `aggregate`).
+// Aceita as duas formas: se tiver `.aggregate`, trata como saida completa (usa
+// `.components[].name` para validar); senao trata o proprio objeto como o aggregate
+// (sem lista de componentes para validar contra --components).
+// Aborta (retorna erro) se os nomes nao baterem com --components — o snapshot precisa
+// corresponder EXATAMENTE ao que foi documentado, nunca uma amostra diferente.
+function loadDataSnapshot(dataFile, journey, components) {
+  if (!fs.existsSync(dataFile)) {
+    throw new Error(`--data: arquivo nao encontrado: ${dataFile}`);
+  }
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+  } catch {
+    throw new Error(`--data: ${dataFile} nao e um JSON valido.`);
+  }
+  const aggregate = raw && raw.aggregate ? raw.aggregate : raw;
+  const dataComponentNames = Array.isArray(raw?.components)
+    ? raw.components.map((c) => c && c.name).filter(Boolean)
+    : null;
+
+  if (dataComponentNames) {
+    const wanted = new Set(components.map((c) => path.basename(c)));
+    const got = new Set(dataComponentNames);
+    const missingFromData = [...wanted].filter((w) => !got.has(w));
+    const extraInData = [...got].filter((g) => !wanted.has(g));
+    if (missingFromData.length || extraInData.length) {
+      throw new Error(
+        `--data nao bate com --components. Faltando no --data: ${missingFromData.join(', ') || '(nenhum)'}; ` +
+        `a mais no --data: ${extraInData.join(', ') || '(nenhum)'}. Abortando sem gravar (o snapshot precisa ` +
+        `corresponder exatamente ao que foi documentado).`
+      );
+    }
+  }
+
+  return {
+    journey,
+    lastScan: today(),
+    componentsScanned: dataComponentNames ? dataComponentNames.length : (raw?.componentsScanned ?? null),
+    components: enrichComponents(components),
+    aggregate,
+  };
 }
 
 function main() {
   const opts = parseArgs();
   if (!opts.journey) { console.error('ERRO: --journey e obrigatorio.'); process.exit(1); }
+
+  // Valida o --data ANTES de qualquer escrita (nao so no final) — se nao bater com
+  // --components, aborta sem tocar em nada, exatamente como a trava de integridade
+  // de jornadas abaixo.
+  let snapshot = null;
+  if (opts.dataFile) {
+    try {
+      snapshot = loadDataSnapshot(opts.dataFile, opts.journey, opts.components);
+    } catch (e) {
+      console.error(`ERRO: ${e.message}`);
+      process.exit(2);
+    }
+  }
 
   let sectionMd = '';
   if (opts.stdin) sectionMd = fs.readFileSync(0, 'utf8');
@@ -154,9 +240,14 @@ function main() {
 
   const isNew = !beforeJourneys.some((b) => normHeading(b) === normHeading(opts.journey));
 
+  const journeysDir = path.join(opts.outDir, 'journeys');
+  const slug = slugFromHeading(opts.journey);
+  const snapshotPath = snapshot ? path.join(journeysDir, `${slug}.json`) : null;
+
   if (opts.dryRun) {
     console.log('===== design-patterns.md (merged) =====\n' + mergedDoc);
     console.log('===== journeys-index.json (merged) =====\n' + JSON.stringify(mergedIndex, null, 2));
+    if (snapshot) console.log(`===== ${snapshotPath} (novo) =====\n` + JSON.stringify(snapshot, null, 2));
     console.log('\n[dry-run] nada foi gravado.');
     return;
   }
@@ -164,11 +255,15 @@ function main() {
   fs.mkdirSync(opts.outDir, { recursive: true });
   fs.writeFileSync(docPath, mergedDoc, 'utf8');
   fs.writeFileSync(indexPath, JSON.stringify(mergedIndex, null, 2) + '\n', 'utf8');
+  if (snapshot) {
+    fs.mkdirSync(journeysDir, { recursive: true });
+    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
+  }
 
   console.log(JSON.stringify({
     ok: true, action: isNew ? 'appended' : 'updated', journey: opts.journey,
     journeysBefore: beforeJourneys.length, journeysAfter: afterJourneys.length,
-    allJourneys: afterJourneys, docPath, indexPath,
+    allJourneys: afterJourneys, docPath, indexPath, snapshotPath,
   }, null, 2));
 }
 

@@ -293,22 +293,47 @@ Padrão `on<Action>`: `onSelect`, `onSave`, `onCancel`.
 (seção independente — pode ter convenções diferentes de Atendimento)
 ```
 
-## 5. Quality Gate — Rubrica de 100 Pontos
+## 5. Quality Gate — Rubrica de Aderência ao Design Pattern (100 pontos)
 
-| Dimensão | Pontos | Critério |
+Implementada em `scripts/pattern-scorer.mjs`. **Não duplica** qualidade genérica de
+LWC — isso já é coberto pelas skills delegadas (`experience-lwc-generate` tem sua
+própria rubrica PICKLES de 165 pontos; `design-systems-slds-apply` exige o SLDS linter
+oficial). A rubrica **própria** desta skill cobre só o que é específico da ORG,
+extraído 1:1 do snapshot estruturado da jornada (`journeys/<slug>.json`):
+
+| Dimensão | Pontos | Lê do snapshot (`aggregate.*`) |
 |---|---|---|
-| Naming | 15 | Segue prefixo/estilo da org |
-| Slots | 10 | Usa slots quando aplicável |
-| CSS | 15 | Escopado, usa tokens, sem cor hardcoded |
-| JavaScript | 15 | Imports padrão, event naming, sem anti-padrão |
-| Acessibilidade | 15 | ARIA, navegação por teclado, foco |
-| Composição | 10 | Parent-child conforme padrão da org |
-| Performance | 10 | Sem anti-padrão óbvio (`@wire` correto, lazy load) |
-| Documentação | 5 | JSDoc em métodos/slots públicos |
-| Sem anti-padrões | 5 | Sem ID hardcoded, sem `eval`/`innerHTML` |
+| Estrutura (tag raiz) | 10 | `html.rootTags` |
+| Naming | 10 | `naming.dominantStyle`, `naming.commonPrefix` |
+| Vocabulário SLDS | 15 | `html.commonSldsClasses` |
+| Contrato `@api` (nomes + defaults) | 20 | `js.allApiMembers`, `js.apiDefaults` |
+| Getters/computed | 5 | `js.allGetters` |
+| Utilitários compartilhados | 10 | `js.sharedUtils` |
+| Contrato de eventos | 10 | `js.eventContracts` |
+| Forma da chamada Apex | 5 | `js.apexCallStyle` |
+| Loading & Erro | 5 | `html.spinnerUsers`, `js.toast.users` |
+| i18n (Custom Labels) | 5 | `js.labelUsers` |
+| Acessibilidade (baseline) | 5 | `html.a11yAvg` |
 
-**Gate:** score ≥ 80 → mostra preview; 60–79 → gera local só (sem preview); < 60 →
-bloqueia, pede ajuste ao usuário.
+**Princípio central:** se a jornada não tem convenção registrada para um sinal, a
+dimensão concede crédito integral — a skill nunca inventa regra nem penaliza por falta
+de dado. **O preview sempre mostra os dois scores lado a lado:** aderência (gate formal
+desta skill) + o resultado do craft delegado (PICKLES 165pt + SLDS lint) — garante que
+ninguém "esqueça" de checar se o craft delegado realmente rodou.
+
+**Modo Editar — diff estrutural, não o arquivo inteiro:** o scorer roda
+`pattern-extractor.mjs` (Skill 1) duas vezes (baseline vs. proposto) e compara por
+CHAVE. Dimensão sem alteração real → excluída do total/max (nem soma, nem penaliza —
+"legado intocado não penaliza"). Dimensão com alteração → pontuada só com os itens
+NOVOS. Item REMOVIDO que era convenção documentada → aviso de **regressão** explícito,
+separado do score (nunca aceito nem bloqueado silenciosamente).
+
+**Flag de novidade:** gatilho objetivo (não um "parece que sim") para sugerir "rode a
+Skill 1 de novo" — dispara quando o componente usa um `@api`/evento/classe SLDS que não
+aparece nem nos padrões compartilhados nem em `componentSpecifics` de nenhum
+componente já documentado da jornada.
+
+Detalhamento completo em `references/quality-rubric.md` (da própria skill).
 
 > Nota: diferente do piso ≥99% do `apex-test-loop`. Ali é cobertura de teste
 > (tudo-ou-nada, mensurável objetivamente); aqui é UI — "mínimo viável deployável" é
@@ -320,34 +345,32 @@ bloqueia, pede ajuste ao usuário.
 ```
 Salesforce-LWC-Developer/
 ├── .claude/
-│   ├── (SEM settings.json na Skill 1 — instalacao aditiva; NAO sobrescrever o do projeto)
+│   ├── settings.json                           # Camada 1+2 de seguranca da Skill 2 (permissions.deny + guard hook)
 │   └── skills/
-│       ├── lwc-pattern-documenter/             # SKILL 1 — MVP, implementar primeiro
+│       ├── lwc-pattern-documenter/             # SKILL 1 — implementada, testada
 │       │   ├── SKILL.md                        # Triggers, owns, workflow de extração+escrita
 │       │   ├── scripts/
 │       │   │   ├── pattern-extractor.mjs       # Le arquivos apontados, extrai padroes (determinístico)
-│       │   │   └── pattern-writer.mjs          # Grava/mescla design-patterns.md + índice (determinístico)
+│       │   │   └── pattern-writer.mjs          # Grava/mescla design-patterns.md + índice + snapshot (determinístico)
 │       │   └── references/
 │       │       ├── extraction-signals.md       # O que extrair (estrutura, naming, css, eventos, dados...)
 │       │       └── guided-mode.md              # Fluxo do guia inicial (secao 7) — passo a passo
 │       │
-│       ├── lwc-pattern-generator/              # SKILL 2 — depois de validar a Skill 1
-│       │   ├── SKILL.md                        # Triggers, owns/delegates, workflow completo
+│       ├── lwc-pattern-generator/              # SKILL 2 — implementada, testada
+│       │   ├── SKILL.md                        # Triggers, owns/delegates, os 3 modos, NUNCA FACA
 │       │   ├── RECOMMENDATIONS.md              # Ledger de autoaprendizado (R-XXXX)
 │       │   ├── scripts/
-│       │   │   ├── guard.mjs                   # Camada 2 de seguranca
-│       │   │   ├── pattern-scorer.mjs          # Rubrica 100pt
-│       │   │   └── lwc-generator.mjs           # Motor de templates (geracao)
-│       │   ├── assets/
-│       │   │   ├── templates/                  # .mustache: component.js/html/css/meta.xml
-│       │   │   └── examples/                   # LWCs de referencia
+│       │   │   ├── guard.mjs                   # Camada 2 de seguranca — trava factual, nao confia em "modo"
+│       │   │   ├── pattern-reader.mjs          # Le journeys/<slug>.json; --find-journey (lookup reverso)
+│       │   │   └── pattern-scorer.mjs          # Rubrica de aderencia (100pt) + diff estrutural (modo Editar)
 │       │   ├── references/
-│       │   │   ├── quality-rubric.md
-│       │   │   ├── guided-mode.md
-│       │   │   ├── preview-integration.md
-│       │   │   ├── security-gates.md
-│       │   │   └── conflict-resolution.md
-│       │   └── tests/                          # guard.test.mjs, pattern-scorer.test.mjs
+│       │   │   ├── guided-mode.md              # As 10 etapas, os 3 modos, mensagens
+│       │   │   ├── quality-rubric.md           # As 11 dimensoes + diff estrutural + flag de novidade
+│       │   │   ├── security-gates.md           # Modelo de seguranca completo (guard factual)
+│       │   │   ├── conflict-resolution.md      # Padrao da jornada vs. requisito do usuario
+│       │   │   ├── clone-adapt-guide.md        # Separar convencao (reaproveitar) de especifico (adaptar)
+│       │   │   └── edit-mode-guide.md          # Diff estrutural + deteccao de regressao
+│       │   └── tests/                          # guard.test.mjs (27 casos), pattern-scorer.test.mjs (14 casos)
 │       │
 │       ├── experience-lwc-generate/            # IMPORTADA na integra (sf-skills v1.31.0, Apache-2.0) ✅
 │       ├── design-systems-slds-apply/          # IMPORTADA na integra (sf-skills v1.31.0, Apache-2.0) ✅
@@ -357,10 +380,19 @@ Salesforce-LWC-Developer/
 ├── .lwc-pattern-documenter/                     # SAIDA runtime da Skill 1 (criada no projeto, como .apex-test-loop/)
 │   └── lwc-design-system/
 │       ├── design-patterns.md                   # Documento vivo — 1 secao por jornada/produto
-│       └── journeys-index.json                  # Lista canonica de jornadas/produtos ja documentados
-├── force-app/main/default/lwc/                 # LWCs da org (Skill 1 le; Skill 2 gera)
+│       ├── journeys-index.json                  # Lista canonica de jornadas/produtos ja documentados
+│       └── journeys/                            # Snapshot JSON estruturado por jornada (gravado com --data)
+│           └── <slug>.json                      # Ex.: consorcio.json — o `aggregate` que a Skill 2 le de volta
+├── force-app/main/default/lwc/                 # LWCs da org (Skill 1 le; Skill 2 cria/clona/edita)
 └── LICENSE                                     # MIT
 ```
+
+**Nao ha motor de templates proprio (`lwc-generator.mjs`/`.mustache`) na Skill 2** —
+decisao revisada: o modelo comprovado (Skill 1, `apex-test-loop`) e "script extrai/
+grava/pontua mecanicamente, o AGENTE escreve o codigo" usando o sinal +
+`experience-lwc-generate` (que ja tem templates oficiais). Um motor proprio duplicaria
+essa fonte e nao se adaptaria bem a estrutura especifica de cada jornada
+(`representativeSkeleton`/`modalSkeleton` variam por jornada, nao sao genericos).
 
 > **Nota:** a pasta `.lwc-pattern-documenter/` é criada **no projeto do usuário** em
 > tempo de execução (não é versionada aqui, neste repo da skill) — exatamente como a
@@ -369,21 +401,25 @@ Salesforce-LWC-Developer/
 
 ### Coexistência com a `apex-test-loop` (mesmo projeto Salesforce)
 
-O usuário quer as duas skills lado a lado no mesmo projeto. Regras que garantem que
-uma nunca sobrescreve a outra:
+Quando o usuário quer as duas skills (mais a `apex-test-loop`) lado a lado no mesmo
+projeto Salesforce (não neste repo-fonte das skills, mas no projeto onde elas são
+instaladas), regras que garantem que uma nunca sobrescreve a outra:
 
-- **`.claude/settings.json` é território da `apex-test-loop`** (guard hook +
-  `permissions.deny` + `bypassPermissions`). A **Skill 1 não traz settings.json** —
-  instalação puramente aditiva. Quando a **Skill 2** for construída e precisar do seu
-  próprio guard, o correto é **MESCLAR** no `settings.json` existente (adicionar as
-  regras/hook), **nunca substituir o arquivo** — senão o guard da apex-test-loop morre.
-- **Caminhos de saída isolados:** a Skill 1 escreve só em `.lwc-pattern-documenter/lwc-design-system/`; a
-  apex-test-loop usa `.apex-test-loop/state/`. Sem interseção.
-- **O guard da apex-test-loop, se presente, libera** as escritas `.md`/`.json` e a
-  leitura de LWC desta skill (ele só mira `.cls`/`.trigger`/`force-app/classes`) —
-  rede de segurança extra, não bloqueio.
+- **`.claude/settings.json` — atenção na instalação.** Este repo já traz um
+  `settings.json` (Camadas 1+2 da Skill 2). Se o projeto-destino **já tiver** um
+  `settings.json` da `apex-test-loop`, o correto é **MESCLAR** os dois (unir `deny` e
+  os hooks `PreToolUse`, cada guard com seu próprio `matcher`/`command`), **nunca
+  substituir o arquivo** — senão o guard de uma das skills morre. A **Skill 1** não
+  precisa disso — ela não traz `settings.json` (instalação puramente aditiva).
+- **Caminhos de saída isolados:** Skill 1 escreve só em
+  `.lwc-pattern-documenter/lwc-design-system/`; a Skill 2 só gera/edita em
+  `force-app/**/lwc/**`; a `apex-test-loop` usa `.apex-test-loop/state/` e
+  `force-app/**/classes/**`. Sem interseção.
+- **Os guards não competem, são aditivos:** o `guard.mjs` da `apex-test-loop` mira
+  `.cls`/`.trigger`/`force-app/classes`; o `guard.mjs` da Skill 2 mira bundles LWC
+  (`force-app/**/lwc/**`). Cada um libera o domínio do outro.
 - **Sem colisão de gatilhos:** os blocos TRIGGER/DO NOT TRIGGER escopam cada skill ao
-  seu domínio (documentação de LWC × cobertura de teste Apex).
+  seu domínio (documentação de LWC × geração/edição de LWC × cobertura de teste Apex).
 
 ## 7. Fluxo Interativo — Skill 1 (`lwc-pattern-documenter`), Guia Inicial Obrigatório
 
@@ -421,40 +457,79 @@ uma nunca sobrescreve a outra:
 Detalhamento completo desse fluxo (mensagens exatas, formato das perguntas) fica em
 `references/guided-mode.md` da própria skill, a escrever no Tier 0.
 
-## 8. Fluxo Interativo — Skill 2 (`lwc-pattern-generator`), Resumo
+## 8. Fluxo Interativo — Skill 2 (`lwc-pattern-generator`), os 3 Modos
 
-1. **Escolha de modo:** Automático / Guiado (passo-a-passo) / Learn Patterns
-2. **Requirement gathering:** propósito, fonte de dados, slots, nível de acessibilidade
-3. **Escolha da jornada/produto de referência** (consultando o `journeys-index.json`
-   da Skill 1) — a geração só usa a seção correspondente do `design-patterns.md`.
-4. **Preview de padrão:** mostra nome/estrutura proposta ANTES de gerar (ex.: "seu
-   padrão usa prefixo `c_`, seu componente ficaria `c_userPicker`")
-5. **Gate de geração:** checklist + score antes de liberar preview
-6. **Live Preview:** deploy em scratch org (`--test-only`), abre no browser, aprovação
-7. **Deploy final:** só após aprovação explícita; delega a `platform-metadata-deploy`
-8. **Aprendizado:** atualiza a seção da jornada em `design-patterns.md` +
-   `RECOMMENDATIONS.md` se houve fricção
+Revisão pós-implementação: a Skill 2 não tem um "modo automático" genérico — ela
+sempre passa pelo guia, e o usuário escolhe explicitamente **qual dos 3 modos de
+operação** quer usar (pedido explícito do usuário: "editar um LWC existente, clonar e
+adaptar para novos cenários, ou criar do zero"). Detalhamento completo em
+`references/guided-mode.md` (da própria skill).
 
-## 9. Arquivos Críticos — Ordem de Implementação
+| | **Criar** | **Clonar e Adaptar** | **Editar** |
+|---|---|---|---|
+| Risco | Baixo | Médio | Alto |
+| Arquivo-alvo | Novo | Novo | Existente (produção) |
+| Referência | `aggregate` da jornada | Jornada + 1 componente-fonte real | Jornada descoberta a partir do componente |
+| Guard (`classifyWrite`) | `allow` | `allow` (checa colisão de nome antes) | `ask` obrigatório |
 
-- **Tier 0 (MVP — Skill 1, `lwc-pattern-documenter`):** `SKILL.md` +
-  `pattern-extractor.mjs` + `pattern-writer.mjs` + `extraction-signals.md` + `guided-mode.md` +
-  `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` + `.lwc-pattern-documenter/lwc-design-system/journeys-index.json` (arquivos iniciais
-  vazios/template). Sem segurança de escrita de componente (não aplicável — a skill
-  só lê arquivos e escreve Markdown/JSON de índice).
-- **Tier 1 (validação do MVP):** usar a Skill 1 em 2-3 jornadas reais da org do
-  usuário, revisar manualmente se os padrões extraídos batem com a realidade, ajustar
-  `extraction-signals.md` conforme necessário. **Só avança pro Tier 2 depois desse
-  ciclo de validação.**
-- **Tier 2 (fundação da Skill 2, `lwc-pattern-generator`):** `SKILL.md`, `guard.mjs`,
-  **+ importar na íntegra `experience-lwc-generate` e `design-systems-slds-apply`**
-  do `sf-skills` (snapshot v1.31.0, Apache-2.0) para `.claude/skills/`, com
-  `VENDOR-ATTRIBUTION.md` (mesmo padrão do `apex-test-loop`)
-- **Tier 3 (geração):** `pattern-scorer.mjs`, `lwc-generator.mjs`, templates
-  `.mustache`
-- **Tier 4 (UX):** `guided-mode.md` (da Skill 2), `quality-rubric.md`,
-  `conflict-resolution.md`
-- **Tier 5 (aprendizado):** `RECOMMENDATIONS.md`, wiring em `settings.json`
+**Fluxo comum aos 3 modos:**
+1. **Gate inicial:** confirma que existe ao menos uma jornada documentada
+   (`journeys-index.json`) — nunca gera sem referência confirmada, nem no modo Criar.
+2. **[Só Editar] Lookup reverso** componente→jornada via
+   `pattern-reader.mjs --find-journey` — nunca escolhe a jornada sozinho se o
+   componente aparecer em mais de uma.
+3. **Escolha explícita de modo**, depois jornada de referência (Criar/Clonar) ou já
+   descoberta (Editar).
+4. **Coleta de requisito** (varia por modo — Clonar dispara `platform-apex-generate`
+   ANTES do LWC se precisar de Apex novo).
+5. **Checagem proativa de colisão de nome/path** antes do guard entrar em ação.
+6. **Preview do que será reaproveitado vs. adaptado** (Clonar,
+   `references/clone-adapt-guide.md`) ou **diff proposto** (Editar,
+   `references/edit-mode-guide.md`) — aprovação obrigatória.
+7. **Gera/edita**, delegando craft para `experience-lwc-generate` (bundle, `@wire`,
+   Apex/GraphQL, a11y, Jest) e `design-systems-slds-apply` (styling, verificação de
+   hooks/classes reais antes de usar).
+8. **Score de aderência (`pattern-scorer.mjs`) + score de craft/SLDS lado a lado** —
+   ver seção 5 (rubrica). Modo Editar pontua só o diff estrutural.
+9. **Deploy** com aprovação explícita; delega a `platform-metadata-deploy`.
+10. **Aprendizado:** `RECOMMENDATIONS.md` se houve fricção; sugestão de "rode a Skill 1
+    de novo" **só** se a flag de novidade disparar (gatilho objetivo — ver seção 5).
+    **Nunca** reescreve `design-patterns.md`/`journeys-index.json`/`journeys/*.json` —
+    território exclusivo da Skill 1.
+
+## 9. Arquivos Críticos — Ordem de Implementação (status: ambas as skills implementadas)
+
+- **Tier 0 (Skill 1, `lwc-pattern-documenter`) ✅:** `SKILL.md` +
+  `pattern-extractor.mjs` + `pattern-writer.mjs` (incl. `--data` para o snapshot
+  estruturado) + `extraction-signals.md` + `guided-mode.md` +
+  `.lwc-pattern-documenter/lwc-design-system/{design-patterns.md,journeys-index.json,journeys/*.json}`.
+- **Tier 1 (validação do MVP) ✅:** Skill 1 validada em jornadas reais (Sidebar Dados
+  Cadastrais, Consórcio), revisada por 3 agentes paralelos + testes de borda, corrigida
+  contra bugs reais (vazamento de comentários, escrita não determinística, sinais
+  falsos de divergência).
+- **Tier 2 (fundação da Skill 2, `lwc-pattern-generator`) ✅:** `SKILL.md`, `guard.mjs`
+  (trava factual — nunca confia em "modo" autodeclarado), `settings.json` (Camadas 1+2)
+  — as 2 skills oficiais já estavam importadas ✅.
+- **Tier 2.5 (segurança testada — bloqueava o Tier 3) ✅:** `tests/guard.test.mjs`
+  (27 casos: comandos destrutivos, colisão parcial de bundle, case-insensitive, etc.).
+  Só avançou pro Tier 3 com esses testes passando — mesma lição da Skill 1 (nasceu sem
+  testes, só ganhou depois de um bug real; a Skill 2 nasce testada por ser mais
+  arriscada).
+- **Tier 3 (leitura + scoring) ✅:** `pattern-reader.mjs` (+ `--find-journey` para o
+  lookup reverso) + `pattern-scorer.mjs` (rubrica de aderência + diff estrutural) +
+  `tests/pattern-scorer.test.mjs` (14 casos, cobrindo os 3 buckets: legado intocado não
+  penaliza, item novo penaliza, remoção de convenção vira regressão). Validado também
+  em integração ponta a ponta com o `pattern-extractor.mjs` real (não só fixtures
+  sintéticas).
+- **Tier 4 (UX/fluxo) ✅:** `guided-mode.md` (10 etapas, 3 modos), `quality-rubric.md`,
+  `security-gates.md`, `conflict-resolution.md`, `clone-adapt-guide.md`,
+  `edit-mode-guide.md`.
+- **Tier 5 (aprendizado) ✅:** `RECOMMENDATIONS.md` + a flag de novidade (gatilho
+  objetivo) ligada ao `pattern-scorer.mjs`.
+
+Não há um "motor de templates" (Tier de geração separado) — decisão revisada na seção 6:
+o agente escreve o código usando o sinal do `pattern-reader.mjs` + o craft delegado,
+sem um script de templating próprio.
 
 ## 10. Reuso de `apex-test-loop` e `sf-skills`
 
@@ -482,9 +557,13 @@ equivalente oficial, e ambos ficam restritos à Skill 2. Detalhes da pesquisa em
 
 ## 11. Decisões de Design (e porquês)
 
-- **Gate em 80pt, não 99%:** LWC é UI — "mínimo viável deployável" é funcionar + casar
-  com o padrão; validação de acessibilidade fina acontece no preview visual, não é
-  tudo-ou-nada como cobertura de teste.
+- **Score de aderência é informativo, não um gate numérico automático (diferente do
+  piso ≥99% do `apex-test-loop`):** LWC é UI — "mínimo viável deployável" é funcionar +
+  casar com o padrão, e a decisão de prosseguir é humana (aprovação explícita no
+  preview, etapa 8 do guia), não um corte automático tipo "≥80 libera, <60 bloqueia".
+  O score aponta ONDE o componente diverge; quem decide se isso é aceitável é o
+  usuário — sobretudo porque divergência pode ser intencional (seção de resolução de
+  conflito).
 - **`guard` responde `ask` (não `deny`) para sobrescrita:** o usuário pode
   legitimamente querer refatorar um LWC existente; a skill não pode saber a intenção
   sozinha, então pede aprovação em vez de bloquear.
@@ -518,36 +597,26 @@ equivalente oficial, e ambos ficam restritos à Skill 2. Detalhes da pesquisa em
   as essenciais, sem `design-systems-slds-validate` por ora) e foca seu próprio
   valor em injetar os padrões específicos da org, que não têm equivalente oficial.
 
-## Próximos Passos
+## Status Atual
 
-Este documento é o ponto de partida para discussão. Estado da validação item a item:
+Ambas as skills estão **implementadas e testadas** (seção 9 lista os tiers completos):
 
-1. ✅ **Decidido:** escopo dividido em 2 skills sequenciais (seção 0) — Skill 1
-   (`lwc-pattern-documenter`) documenta padrões por jornada/produto em Markdown;
-   Skill 2 (`lwc-pattern-generator`) gera código depois, usando a Skill 1 como
-   referência. Implementação começa pela Skill 1 (Tier 0).
-2. ✅ **Decidido:** regras de confiança e curadoria da Skill 1 (seção 4.1) —
-   seleção híbrida de arquivos, mínimo de 3 componentes por jornada, divergência
-   documentada (nunca decidida pela skill), lista canônica de jornadas/produtos.
-3. ✅ **Decidido:** a Skill 1 tem um guia inicial obrigatório (seção 7) — nunca
-   executa direto a partir do input bruto; sempre passa pelos 9 passos de checkpoint
-   antes de escrever no documento.
-4. ✅ **Decidido:** a Skill 2 (`lwc-pattern-generator`, Tier 2+) importa na íntegra
-   `experience-lwc-generate` + `design-systems-slds-apply` do `sf-skills` para
-   delegar o craft de LWC — confirmado por pesquisa que nenhuma skill oficial cobre
-   o pattern-learning específico da org (seção 2 e 10). A Skill 1 não delega craft
-   (só lê e documenta).
-5. Confirmar formato exato do `.lwc-pattern-documenter/lwc-design-system/design-patterns.md` (seção 4, "Exemplo de
-   estrutura") e do `journeys-index.json` (seção 6) — os templates propostos servem,
-   ou precisam de mais/menos campos?
-6. Confirmar quais sinais de extração entram no `extraction-signals.md` e em que
-   ordem de prioridade, usando a primeira jornada real que o usuário for documentar
-   como teste de validação (Tier 1).
-7. (Só relevante quando a Skill 2 entrar em cena) Confirmar as 3 camadas de segurança
-   (seção 3) e a rubrica de 100 pontos (seção 5) — nenhuma mudança aqui ainda, ficam
-   validadas quando chegar a hora do Tier 2+.
+1. ✅ **Skill 1 (`lwc-pattern-documenter`)** — implementada, revisada por 3 agentes
+   paralelos + testes de borda, corrigida contra bugs reais, validada em jornadas
+   reais (Sidebar Dados Cadastrais, Consórcio).
+2. ✅ **Skill 2 (`lwc-pattern-generator`)** — implementada com os 3 modos de operação
+   (Criar/Clonar/Editar), guard com trava factual (nunca confia em "modo"
+   autodeclarado), rubrica de aderência (não duplica o craft das skills oficiais),
+   diff estrutural + detecção de regressão no modo Editar, flag de novidade como
+   gatilho objetivo de retroalimentação para a Skill 1. 41 testes automatizados
+   (`guard.test.mjs` + `pattern-scorer.test.mjs`), validados também em integração
+   ponta a ponta com o `pattern-extractor.mjs` real.
+3. ✅ **Extensão retroativa na Skill 1** para viabilizar a Skill 2: `pattern-writer.mjs`
+   ganhou `--data` (persiste snapshot estruturado por jornada em `journeys/<slug>.json`,
+   com validação de consistência contra `--components`) e `journeys-index.json`
+   enriqueceu `components` para `{name, path}` (retrocompatível com o formato antigo).
 
-Próximo passo prático: implementar o Tier 0 (Skill 1) — `SKILL.md`,
-`pattern-extractor.mjs`, `extraction-signals.md`, `guided-mode.md`,
-`design-patterns.md` e `journeys-index.json` — e validar com uma jornada real da org
-do usuário.
+Próximos passos em aberto (não bloqueantes): documentar mais jornadas reais da org do
+usuário para ampliar a cobertura do `design-patterns.md` antes de usar a Skill 2 em
+escala; considerar formalizar um "Tier 6" de aprendizado ativo se o ledger de
+`RECOMMENDATIONS.md` acumular itens recorrentes.

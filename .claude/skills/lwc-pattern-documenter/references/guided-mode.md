@@ -74,14 +74,20 @@ o "ok" explicito. Se o usuario ajustar algo, edite e mostre de novo.
 ⚠️ **NUNCA reescreva os arquivos de saida manualmente** — isso ja apagou uma jornada ja
 gravada (bug real). Use SEMPRE o `pattern-writer.mjs`, que faz o merge por voce:
 ```bash
-# salve a secao aprovada na etapa 8 em section.md, depois:
+# salve a secao aprovada na etapa 8 em section.md; guarde tambem o JSON completo que o
+# pattern-extractor.mjs emitiu na etapa 5 (ex.: extract.json), e passe ambos:
 node .claude/skills/lwc-pattern-documenter/scripts/pattern-writer.mjs \
-  --journey "Nome da Jornada" --components compA,compB,compC --section section.md
+  --journey "Nome da Jornada" --components compA,compB,compC \
+  --section section.md --data extract.json
 ```
 - **Jornada nova** → o writer **anexa** a secao; toda jornada existente permanece intacta.
 - **Atualizacao** → substitui APENAS a secao `## Padrao: <Nome>` daquela jornada (nunca
   duplica, nunca cria `-v2`); faz upsert de `lastScan`/`components` no indice.
 - **Trava de integridade:** o writer **aborta** se o merge fosse perder qualquer jornada.
+- **`--data extract.json` sempre.** Persiste `journeys/<slug>.json` — o snapshot
+  estruturado que a Skill 2 (`lwc-pattern-generator`) le de volta, em vez de reparsear a
+  prosa Markdown. O writer valida que os componentes do `--data` batem com
+  `--components`; se nao baterem, aborta sem gravar nada (nem a secao, nem o indice).
 
 Confirme ao usuario quantas jornadas o documento tem agora (deve ser ≥ antes). Feche com
 o resumo curto (etapa de encerramento do SKILL.md).

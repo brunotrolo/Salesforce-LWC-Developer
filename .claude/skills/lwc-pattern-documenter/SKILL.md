@@ -175,14 +175,24 @@ em `references/guided-mode.md`:
    arquivos manualmente.** Um modelo reescrevendo o arquivo inteiro ja APAGOU uma jornada
    ja gravada (bug real). Use SEMPRE o `pattern-writer.mjs`, que faz o merge mecanico:
    ```bash
-   # salve a secao aprovada na etapa 8 em section.md, depois:
+   # salve a secao aprovada na etapa 8 em section.md, e mantenha a JSON completa que o
+   # pattern-extractor.mjs emitiu na etapa 5 (redirecionada para arquivo, ex.: extract.json):
    node .claude/skills/lwc-pattern-documenter/scripts/pattern-writer.mjs \
-     --journey "Nome da Jornada" --components compA,compB,compC --section section.md
+     --journey "Nome da Jornada" --components compA,compB,compC \
+     --section section.md --data extract.json
    ```
    O writer garante: jornada nova → **anexa** sem tocar nas existentes; existente →
    substitui **so** a secao `## Padrao: <Nome>` dela, preservando cabecalho, ordem e as
    demais jornadas; upsert seguro do `journeys-index.json` (nunca zera o array); e uma
    **trava de integridade** que aborta se o merge fosse perder qualquer jornada.
+
+   **Sempre passe `--data extract.json`.** Isso persiste um snapshot estruturado em
+   `.lwc-pattern-documenter/lwc-design-system/journeys/<slug>.json` — a fonte
+   determinística que a futura `lwc-pattern-generator` (Skill 2) le de volta para gerar
+   componentes, em vez de reparsear a prosa Markdown. Sem `--data`, a jornada fica
+   documentada em Markdown normalmente, mas **sem sinal estruturado para a Skill 2**. O
+   writer valida que os componentes do `--data` batem com `--components` — aborta sem
+   gravar nada (nem a secao, nem o indice) se nao baterem.
 
 ## Formato e local do documento
 

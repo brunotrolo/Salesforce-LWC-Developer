@@ -8,8 +8,8 @@ pela ferramenta a partir do frontmatter do seu `SKILL.md`.
 
 | Skill | Estado | O que faz |
 |---|---|---|
-| [`lwc-pattern-documenter/`](lwc-pattern-documenter/) | ✅ Implementada (Tier 0) | Aprende e **documenta** os padrões de design de LWC, por jornada/produto, num Markdown vivo. Só lê e documenta — nunca gera componentes. |
-| `lwc-pattern-generator/` | ⏳ A construir (Tier 2+) | **Gera/edita** LWCs respeitando a jornada de referência, delegando o craft às skills oficiais abaixo, e injetando por cima os padrões da org aprendidos pela Skill 1. |
+| [`lwc-pattern-documenter/`](lwc-pattern-documenter/) | ✅ Implementada | Aprende e **documenta** os padrões de design de LWC, por jornada/produto, num Markdown vivo. Só lê e documenta — nunca gera componentes. |
+| [`lwc-pattern-generator/`](lwc-pattern-generator/) | ✅ Implementada | **Cria, clona/adapta ou edita** LWCs respeitando a jornada de referência (3 modos de operação), delegando o craft às skills oficiais abaixo, e pontuando aderência ao padrão da org aprendido pela Skill 1. |
 
 ### Skills oficiais da Salesforce importadas (craft — `forcedotcom/sf-skills`, Apache-2.0)
 
