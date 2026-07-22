@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <em>Aprende o design system de LWC da sua org e documenta os padrões &#8212; por jornada, com curadoria sua.</em>
+  <em>Aprende o design system de LWC da sua org e gera/edita componentes alinhados a ele &#8212; por jornada, com curadoria sua.</em>
 </p>
 
 <p align="center">
@@ -16,47 +16,32 @@
 </p>
 
 <p align="center">
-  <b>📄 README</b> &nbsp;·&nbsp; <a href="./docs/ARCHITECTURE.md">🏛️ Arquitetura</a> &nbsp;·&nbsp; <a href="./docs/PLANEJAMENTO.md">🧭 Planejamento</a> &nbsp;·&nbsp; <a href="./LICENSE">⚖️ MIT License</a>
+  <b>📄 README</b> &nbsp;·&nbsp; <a href="./INFORMACOES.md">📖 Informações</a> &nbsp;·&nbsp; <a href="./docs/ARCHITECTURE.md">🏛️ Arquitetura</a> &nbsp;·&nbsp; <a href="./docs/PLANEJAMENTO.md">🧭 Planejamento</a> &nbsp;·&nbsp; <a href="./LICENSE">⚖️ MIT License</a>
 </p>
 
 ---
 
-Skills para o Claude Code que **aprendem o design system de LWC da sua org** (padrões construídos ao longo de anos) e, no futuro, **geram componentes** que já nascem alinhados a ele. Tudo com **curadoria sua**: você aponta os arquivos, agrupa por **jornada/produto**, e o documento cresce incrementalmente.
+Duas skills para o Claude Code (ou OpenCode) que trabalham em sequência:
 
-```
-você aponta os LWCs de uma jornada  →  extrai os sinais  →  você revisa o preview
-        ↑                                                            ↓
-        +--- documenta a seção da jornada em Markdown vivo ----------+
-```
+- **Skill 1 — `lwc-pattern-documenter`**: **documenta** o design system de LWC da sua
+  org, por jornada/produto, num Markdown vivo. Só lê e documenta.
+- **Skill 2 — `lwc-pattern-generator`**: **cria, clona/adapta ou edita** LWCs alinhados
+  a essa documentação, delegando o craft às skills oficiais da Salesforce.
 
-**Como funciona (duas skills):**
-- **Skill 1 — `lwc-pattern-documenter`** ✅ *(esta, implementada):* aprende e **documenta** os padrões por jornada num Markdown vivo. **Só lê e documenta** — nunca gera nem edita componentes.
-- **Skill 2 — `lwc-pattern-generator`** ✅ *(implementada):* **cria, clona/adapta ou edita** LWCs (3 modos de operação) respeitando a jornada de referência, **delegando o craft** às skills oficiais da Salesforce (`experience-lwc-generate` + `design-systems-slds-apply`, já importadas neste repo) e pontuando aderência ao padrão da sua org, aprendido pela Skill 1.
-
-> Mesmo princípio do [`Salesforce Apex Cover Loop`](https://github.com/brunotrolo/Salesforce-Apex-Cover-Loop): **orquestração nossa + craft oficial da Salesforce**.
+> Para a arquitetura, as decisões de design e a estratégia por trás do projeto, veja
+> **[Informações](./INFORMACOES.md)**. Este README é só o começo rápido.
 
 ---
 
-## ⚡ Começo rápido
+## ⚡ Pré-requisitos e instalação
 
-### 1. Pré-requisitos
-
-- **Node 18+** (para o extrator de padrões — script sem dependências).
-- **Projeto SFDX** com componentes em `force-app/*/lwc/` (os LWCs que a skill vai analisar).
+- **Node 18+** (scripts das skills não têm dependências externas).
+- **Projeto SFDX** com componentes em `force-app/*/lwc/`.
 - **[Claude Code](https://docs.claude.com/en/docs/claude-code)** ou **[OpenCode](https://opencode.ai)**.
 
-> **Skill 1 roda 100% local** — ela só **lê** os arquivos de LWC e escreve Markdown. **Não** precisa de Salesforce CLI (`sf`), nem de conexão com a org, nem de deploy. (A Skill 2 usa `sf`/CLI só na etapa final de deploy, delegada à `platform-metadata-deploy` — a geração/edição em si também é local.)
+### Instale — copie **apenas a pasta `.claude`** para o seu projeto
 
-> **Opcional — rodar de graça com [OpenCode](https://opencode.ai)** (sem key, sem GPU):
-> ```bash
-> npm install -g opencode-ai
-> opencode   # no app: /models → escolha "DeepSeek V4 Flash Free" (OpenCode Zen)
-> ```
-> A skill funciona igual no OpenCode (mesmo `.claude/skills/`).
-
-### 2. Instale — copie **apenas a pasta `.claude`** para o seu projeto
-
-Rode **de dentro da pasta do seu projeto** (onde está `force-app`). O comando clona este repo num diretório temporário, copia **só o `.claude/`** e apaga o resto:
+Rode **de dentro da pasta do seu projeto** (onde está `force-app`):
 
 **Windows (PowerShell):**
 ```powershell
@@ -68,54 +53,69 @@ git clone --depth 1 https://github.com/brunotrolo/Salesforce-LWC-Developer.git .
 git clone --depth 1 https://github.com/brunotrolo/Salesforce-LWC-Developer.git .skill-tmp && mkdir -p .claude && cp -r .skill-tmp/.claude/. .claude/ && rm -rf .skill-tmp
 ```
 
-Isso instala a nossa skill (`lwc-pattern-documenter`) **e** as duas skills oficiais de craft, todas sob `.claude/skills/`.
+Isso instala as 2 skills próprias (`lwc-pattern-documenter` + `lwc-pattern-generator`),
+as 2 skills oficiais de craft (`experience-lwc-generate` + `design-systems-slds-apply`)
+e o `.claude/settings.json` (segurança da Skill 2).
 
-> **Já usa a [`apex-test-loop`](https://github.com/brunotrolo/Salesforce-Apex-Cover-Loop) no mesmo projeto?** A instalação é **aditiva e segura**: este repo **não traz `.claude/settings.json`**, então o comando acima **não sobrescreve** o `settings.json` (guard/segurança) da `apex-test-loop` — só acrescenta as pastas de skill. As duas convivem sem colisão. Detalhes na seção "🤝 Coexistência" de `.claude/skills/lwc-pattern-documenter/SKILL.md`.
+> **Já usa a [`apex-test-loop`](https://github.com/brunotrolo/Salesforce-Apex-Cover-Loop)
+> no mesmo projeto?** Ela também tem `settings.json` próprio — **não deixe o comando
+> acima sobrescrever o seu**. Mescle os dois (`deny` + os hooks `PreToolUse` de cada
+> guard) em vez de substituir o arquivo. Detalhes em [Informações](./INFORMACOES.md).
 
-> **Para atualizar:** rode o mesmo comando de novo.
+**Para atualizar:** rode o mesmo comando de novo.
 
-### 3. Abra o Claude Code
-
+Abra o Claude Code na pasta do projeto:
 ```bash
 claude
 ```
+As skills carregam automaticamente a partir de `.claude/skills/`.
 
-A skill carrega automaticamente a partir de `.claude/skills/`.
+---
 
-### 4. Use
+## 📗 Skill 1 — `lwc-pattern-documenter`: como usar
 
-```
-/lwc-pattern-documenter
-```
-
-ou naturalmente:
+Dispare com `/lwc-pattern-documenter` ou em linguagem natural:
 > "documente os padrões de LWC da jornada Faturas"
 > "aprenda o design system desses componentes de Atendimento"
 
-A skill conduz um **roteiro de perguntas** (nunca "recebe e sai processando"): pergunta a jornada, quais arquivos analisar, extrai os sinais, mostra um **preview** e só então grava a seção em `.lwc-pattern-documenter/lwc-design-system/design-patterns.md`.
+A skill conduz um roteiro de perguntas — nunca "recebe e sai processando":
 
----
+1. Pergunta a **jornada/produto** (ex.: "Faturas", "Atendimento ao Cliente").
+2. Pergunta **quais LWCs** representam essa jornada — você aponta os caminhos, ou pede
+   para a skill listar os componentes do projeto (mínimo de 3, para não confundir
+   coincidência com convenção).
+3. Extrai os sinais (naming, CSS/SLDS, slots, eventos, contrato `@api`, `@wire`/Apex,
+   acessibilidade...) e mostra um **preview** do que vai gravar.
+4. Só grava após seu "ok" — na seção `## Padrão: <Jornada>` de
+   `.lwc-pattern-documenter/lwc-design-system/design-patterns.md`.
 
-## 🧭 O que a skill registra
+Divergências entre componentes ficam **documentadas, nunca decididas** pela skill —
+a escolha é sempre sua.
 
-Para cada jornada/produto, uma seção com:
-- **Padrões compartilhados** — naming, CSS/tokens, slots, eventos, dados (`@wire`/Apex), acessibilidade, metadados.
-- **Elementos específicos por componente** — o que é único de um só arquivo, atrelado a ele.
-- **⚠️ Convenções inconsistentes** — quando os componentes divergem, as variantes ficam registradas e a decisão é **sua** (a skill nunca escolhe sozinha).
+## 📘 Skill 2 — `lwc-pattern-generator`: como usar
 
-Regras de curadoria embutidas: seleção híbrida de arquivos, **mínimo de 3 componentes** por jornada, e lista canônica de jornadas (evita duplicar por variação de nome).
+Dispare pedindo para **criar**, **clonar** ou **editar** um LWC, sempre citando (ou
+deixando a skill perguntar) qual jornada usar como referência:
+> "crie um novo componente para listar cotas, seguindo o padrão da jornada Consórcio"
+> "clone o componente `consorcioBlocoResumo` e adapte para mostrar dados de seguro"
+> "edite o `alertInfo` para adicionar um novo tipo de alerta"
 
----
+A skill escolhe o modo certo com você (nunca assume) e segue o guia:
 
-## 📖 Documentação Completa
-
-- **→ [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — arquitetura das duas skills, as 4 regras de curadoria, o guia de 9 etapas, coexistência com a `apex-test-loop`, e as decisões de design.
-- **→ [`docs/PLANEJAMENTO.md`](docs/PLANEJAMENTO.md)** — a trilha de pesquisa que embasou tudo (comparação com `apex-test-loop` e com o `forcedotcom/sf-skills`).
+1. Confirma a **jornada de referência** já documentada pela Skill 1 (nunca gera sem
+   uma) — no modo Editar, descobre a jornada sozinha a partir do componente apontado.
+2. Coleta o requisito (varia por modo) e confere se o nome do componente já existe.
+3. **Criar/Clonar**: mostra o que vai reaproveitar do padrão vs. o que é específico do
+   cenário. **Editar**: mostra o **diff** proposto. Aprovação obrigatória nos dois casos.
+4. Gera/edita delegando o craft para `experience-lwc-generate` (bundle, `@wire`,
+   Apex/GraphQL, a11y, Jest) e `design-systems-slds-apply` (SLDS).
+5. Mostra a **pontuação de aderência** ao padrão da jornada junto com o resultado do
+   craft delegado, antes do deploy (também com aprovação explícita).
 
 ---
 
 <p align="center">
-  ⭐ <b><a href="https://github.com/brunotrolo/Salesforce-LWC-Developer/stargazers">Dê uma star no repo</a></b> para ser avisado quando a Skill 2 (geração) e novas melhorias saírem.
+  ⭐ <b><a href="https://github.com/brunotrolo/Salesforce-LWC-Developer/stargazers">Dê uma star no repo</a></b> para acompanhar novas melhorias.
 </p>
 
 <p align="center">

@@ -27,6 +27,15 @@ Arquitetura completa das duas skills e as decisões de design: [`../../docs/ARCH
 
 Estas skills foram desenhadas para conviver no MESMO projeto Salesforce que a
 [`apex-test-loop`](https://github.com/brunotrolo/Salesforce-LoopAgentApex) **sem
-sobrescrever nada**: a `lwc-pattern-documenter` **não traz `.claude/settings.json`**
-(instalação puramente aditiva) e escreve apenas em `.lwc-pattern-documenter/lwc-design-system/`. Detalhes
-na seção "🤝 Coexistência" do `lwc-pattern-documenter/SKILL.md`.
+sobrescrever nada**:
+
+- A `lwc-pattern-documenter` (Skill 1) **não traz `.claude/settings.json`** (instalação
+  puramente aditiva) e escreve apenas em `.lwc-pattern-documenter/lwc-design-system/`.
+- A `lwc-pattern-generator` (Skill 2) **traz um `.claude/settings.json`** (segurança
+  contra sobrescrita de bundle LWC — ver `lwc-pattern-generator/references/security-gates.md`).
+  Se o projeto-destino já tiver um `settings.json` da `apex-test-loop`, **mescle os
+  dois** (`deny` unificado + os dois hooks `PreToolUse` lado a lado) em vez de
+  substituir o arquivo — senão o guard de uma das skills morre.
+
+Detalhes completos em [`../../INFORMACOES.md`](../../INFORMACOES.md), seção
+"Coexistência com a `apex-test-loop`".
